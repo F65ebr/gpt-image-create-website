@@ -496,8 +496,13 @@
             }
 
             .image-viewer {
-                aspect-ratio: 1;
+                aspect-ratio: auto;
                 height: auto;
+                min-height: 50vh;
+            }
+
+            .image-viewer img {
+                max-height: 70vh;
             }
 
             .prompt-area textarea {
