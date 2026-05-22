@@ -474,6 +474,36 @@
         .param-row .param-group {
             flex: 1;
         }
+
+        @media (orientation: portrait) {
+            body {
+                flex-direction: column;
+                height: auto;
+                min-height: 100vh;
+            }
+
+            .panel-left {
+                width: 100%;
+                min-width: 0;
+                border-right: none;
+                border-bottom: 1px solid #ddd6cc;
+                overflow-y: visible;
+                padding-bottom: 12px;
+            }
+
+            .panel-right {
+                padding: 12px;
+            }
+
+            .image-viewer {
+                aspect-ratio: 1;
+                height: auto;
+            }
+
+            .prompt-area textarea {
+                min-height: 100px;
+            }
+        }
     </style>
 </head>
 <body>
