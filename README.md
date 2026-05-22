@@ -4,7 +4,7 @@
 
 ## 在线访问
 
-部署后访问：`https://f65ebr.github.io/gpt-image-create-website/`
+部署后访问：<https://f65ebr.github.io/gpt-image-create-website/>
 
 首次使用需在页面右上角「设置 API」中填写自己的 API Base URL 和 Token，配置存储在浏览器本地，不会上传。
 
