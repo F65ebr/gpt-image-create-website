@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPT-Image-2 图像生成</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Söhne', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            height: 100vh;
+            display: flex;
+            background: #f9f7f3;
+            color: #2d2b28;
+        }
+
+        .panel-left {
+            width: 360px;
+            min-width: 360px;
+            background: #eee9e1;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            border-right: 1px solid #ddd6cc;
+            overflow-y: auto;
+        }
+
+        .panel-right {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            position: relative;
+            background: #f9f7f3;
+        }
+
+        h1 {
+            font-size: 18px;
+            color: #b35c2a;
+            margin-bottom: 4px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.15s ease;
+        }
+
+        .btn-settings {
+            background: #fff;
+            color: #5a5550;
+            width: 100%;
+            border: 1px solid #ddd6cc;
+        }
+
+        .btn-settings:hover {
+            background: #f5f0ea;
+            border-color: #c4b9ab;
+        }
+
+        .btn-send {
+            background: #c96442;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-send:hover:not(:disabled) {
+            background: #b35c2a;
+        }
+
+        .btn-send:disabled {
+            background: #d4cdc5;
+            color: #9a938b;
+            cursor: not-allowed;
+        }
+
+        .btn-download {
+            background: #fff;
+            color: #5a5550;
+            flex: 1;
+            border: 1px solid #ddd6cc;
+        }
+
+        .btn-download:hover:not(:disabled) {
+            background: #f5f0ea;
+            border-color: #c4b9ab;
+        }
+
+        .btn-download:disabled {
+            background: #f0ebe5;
+            color: #c4b9ab;
+            cursor: not-allowed;
+            border: 1px solid #e8e2da;
+        }
+
+        .btn-clear {
+            background: #fff;
+            color: #5a5550;
+            flex: 1;
+            border: 1px solid #ddd6cc;
+        }
+
+        .btn-clear:hover:not(:disabled) {
+            background: #fdf2ee;
+            border-color: #c96442;
+            color: #c96442;
+        }
+
+        .btn-clear:disabled {
+            background: #f0ebe5;
+            color: #c4b9ab;
+            cursor: not-allowed;
+            border: 1px solid #e8e2da;
+        }
+
+        .prompt-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .prompt-area label {
+            font-size: 13px;
+            color: #7a746d;
+            font-weight: 500;
+        }
+
+        .prompt-area textarea {
+            flex: 1;
+            min-height: 150px;
+            resize: none;
+            background: #fff;
+            border: 1px solid #ddd6cc;
+            border-radius: 10px;
+            padding: 12px;
+            color: #2d2b28;
+            font-size: 14px;
+            line-height: 1.6;
+            font-family: inherit;
+        }
+
+        .prompt-area textarea:focus {
+            outline: none;
+            border-color: #c96442;
+            box-shadow: 0 0 0 3px rgba(201, 100, 66, 0.1);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .image-viewer {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #ddd6cc;
+            border-radius: 16px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.2s;
+            background: #fff;
+        }
+
+        .image-viewer:hover {
+            border-color: #c96442;
+        }
+
+        .image-viewer.drag-over {
+            border-color: #c96442;
+            border-style: solid;
+            background: #fdf2ee;
+        }
+
+        .image-viewer:focus {
+            outline: none;
+            border-color: #c96442;
+        }
+
+        .image-viewer img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .image-placeholder {
+            text-align: center;
+            color: #b5aea6;
+        }
+
+        .image-placeholder p {
+            margin-top: 8px;
+            font-size: 14px;
+        }
+
+        .image-placeholder .icon {
+            font-size: 48px;
+            opacity: 0.6;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(45, 43, 40, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: 16px;
+            padding: 28px;
+            width: 400px;
+            max-width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal h2 {
+            font-size: 17px;
+            margin-bottom: 20px;
+            color: #2d2b28;
+            font-weight: 600;
+        }
+
+        .modal label {
+            display: block;
+            font-size: 13px;
+            color: #7a746d;
+            margin-bottom: 6px;
+            margin-top: 14px;
+            font-weight: 500;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 10px 12px;
+            background: #f9f7f3;
+            border: 1px solid #ddd6cc;
+            border-radius: 8px;
+            color: #2d2b28;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .modal input:focus {
+            outline: none;
+            border-color: #c96442;
+            box-shadow: 0 0 0 3px rgba(201, 100, 66, 0.1);
+        }
+
+        .modal .btn-row {
+            margin-top: 24px;
+            justify-content: flex-end;
+        }
+
+        .modal .btn-cancel {
+            background: #f5f0ea;
+            color: #5a5550;
+        }
+
+        .modal .btn-cancel:hover {
+            background: #eee9e1;
+        }
+
+        .modal .btn-save {
+            background: #c96442;
+            color: white;
+        }
+
+        .modal .btn-save:hover {
+            background: #b35c2a;
+        }
+
+        .loading-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 16px;
+            z-index: 10;
+            border-radius: 16px;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid #eee9e1;
+            border-top-color: #c96442;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-overlay p {
+            color: #7a746d;
+            font-size: 14px;
+        }
+
+        .ref-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #c96442;
+            color: white;
+            font-size: 12px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            z-index: 5;
+            font-weight: 500;
+        }
+
+        .ref-badge .remove {
+            margin-left: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .advanced-toggle {
+            background: #fff;
+            color: #7a746d;
+            border: 1px solid #ddd6cc;
+            border-radius: 10px;
+            padding: 10px 14px;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.15s ease;
+            font-weight: 500;
+        }
+
+        .advanced-toggle:hover {
+            border-color: #c4b9ab;
+            color: #2d2b28;
+        }
+
+        .advanced-toggle .arrow {
+            transition: transform 0.2s;
+            font-size: 11px;
+        }
+
+        .advanced-toggle.open .arrow {
+            transform: rotate(180deg);
+        }
+
+        .advanced-panel {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            padding: 14px;
+            background: #fff;
+            border-radius: 10px;
+            border: 1px solid #ddd6cc;
+            overflow: visible;
+        }
+
+        .advanced-panel.open {
+            display: flex;
+        }
+
+        .param-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            position: relative;
+        }
+
+        .param-group label {
+            font-size: 12px;
+            color: #7a746d;
+            position: relative;
+            cursor: help;
+            border-bottom: 1px dashed #c4b9ab;
+            width: fit-content;
+            font-weight: 500;
+        }
+
+        .param-group label .tooltip {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 0;
+            right: auto;
+            background: #2d2b28;
+            border: none;
+            color: #f9f7f3;
+            font-size: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            width: 210px;
+            line-height: 1.5;
+            z-index: 100;
+            transition: opacity 0.15s;
+            pointer-events: none;
+            font-weight: normal;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .param-row .param-group:last-child label .tooltip {
+            left: auto;
+            right: 0;
+        }
+
+        .param-group label:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .param-group select,
+        .param-group input {
+            padding: 7px 10px;
+            background: #f9f7f3;
+            border: 1px solid #ddd6cc;
+            border-radius: 7px;
+            color: #2d2b28;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        .param-group select:focus,
+        .param-group input:focus {
+            outline: none;
+            border-color: #c96442;
+            box-shadow: 0 0 0 2px rgba(201, 100, 66, 0.1);
+        }
+
+        .param-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .param-row .param-group {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="panel-left">
+        <h1>GPT-Image-2</h1>
+        <button class="btn btn-settings" onclick="openSettings()">&#9881; 设置 API</button>
+
+        <div class="advanced-toggle" onclick="toggleAdvanced()">
+            <span>高级选项</span>
+            <span class="arrow">&#9662;</span>
+        </div>
+        <div class="advanced-panel" id="advancedPanel">
+            <div class="param-row">
+                <div class="param-group">
+                    <label>图像比例<span class="tooltip">生成图片的宽高比。1:1 适合头像图标，3:2 横版适合风景横幅，2:3 竖版适合海报壁纸。</span></label>
+                    <select id="aspectSelect" onchange="updateResolutions()">
+                        <option value="1:1">1:1 (方形)</option>
+                        <option value="3:2">3:2 (横版)</option>
+                        <option value="2:3">2:3 (竖版)</option>
+                        <option value="16:9">16:9 (宽屏)</option>
+                        <option value="9:16">9:16 (竖屏)</option>
+                        <option value="auto">自动</option>
+                    </select>
+                </div>
+                <div class="param-group">
+                    <label>图像分辨率<span class="tooltip">输出图片的像素尺寸。分辨率越高细节越丰富，但生成更慢、费用更高。</span></label>
+                    <select id="sizeSelect">
+                        <option value="1024x1024">1024×1024</option>
+                        <option value="2048x2048">2048×2048 (2K)</option>
+                        <option value="4096x4096">4096×4096 (4K)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="param-row">
+                <div class="param-group">
+                    <label>质量<span class="tooltip">影响图片的细节丰富程度和生成耗时。高质量细节更多但更慢更贵，低质量生成快但细节较少。</span></label>
+                    <select id="qualitySelect">
+                        <option value="auto">自动</option>
+                        <option value="high">高</option>
+                        <option value="medium">中</option>
+                        <option value="low">低</option>
+                    </select>
+                </div>
+                <div class="param-group">
+                    <label>输出格式<span class="tooltip">图片文件格式。PNG 无损且支持透明背景；JPEG 体积小适合照片；WebP 兼顾质量和体积。</span></label>
+                    <select id="outputFormat">
+                        <option value="png">PNG</option>
+                        <option value="jpeg">JPEG</option>
+                        <option value="webp">WebP</option>
+                    </select>
+                </div>
+            </div>
+            <div class="param-row">
+                <div class="param-group">
+                    <label>背景<span class="tooltip">控制图片背景。透明模式会移除背景（仅 PNG/WebP 支持），适合生成 Logo 或贴纸素材。</span></label>
+                    <select id="backgroundSelect">
+                        <option value="auto">自动</option>
+                        <option value="transparent">透明</option>
+                        <option value="opaque">不透明</option>
+                    </select>
+                </div>
+                <div class="param-group">
+                    <label>内容审核<span class="tooltip">OpenAI 的内容安全过滤强度。"自动"为默认审核级别，"宽松"会放宽限制，允许更多创意内容通过。</span></label>
+                    <select id="moderationSelect">
+                        <option value="auto">自动</option>
+                        <option value="low" selected>宽松</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="prompt-area">
+            <label>提示词</label>
+            <textarea id="promptInput" placeholder="描述你想生成的图像..."></textarea>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn btn-send" id="sendBtn" onclick="generate()">生成图像</button>
+            <button class="btn btn-download" id="downloadBtn" disabled onclick="downloadImage()">下载</button>
+            <button class="btn btn-clear" id="clearBtn" disabled onclick="clearImage()">清除</button>
+        </div>
+    </div>
+
+    <div class="panel-right">
+        <div class="image-viewer" id="imageViewer" tabindex="0" onclick="uploadReference()">
+            <div class="image-placeholder" id="placeholder">
+                <div class="icon">&#128444;</div>
+                <p>点击此处上传参考图片</p>
+                <p style="font-size:12px;margin-top:4px;color:#c4b9ab">或等待生成结果</p>
+            </div>
+            <img id="resultImage" style="display:none;" />
+            <span class="ref-badge" id="refBadge" style="display:none;">
+                参考图 <span class="remove" onclick="removeReference(event)">&#10005;</span>
+            </span>
+            <div class="loading-overlay" id="loading">
+                <div class="spinner"></div>
+                <p>正在生成图像...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <h2>API 设置</h2>
+            <label>API Base URL</label>
+            <input type="text" id="apiUrl" placeholder="https://api.openai.com/v1" />
+            <label>API Token</label>
+            <input type="password" id="apiToken" placeholder="sk-..." />
+            <div class="btn-row">
+                <button class="btn btn-cancel" onclick="closeSettings()">取消</button>
+                <button class="btn btn-save" onclick="saveSettings()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="handleFileUpload(event)" />
+
+    <script>
+        let referenceImageBase64 = null;
+        let referenceImageFile = null;
+        let generatedImageBase64 = null;
+
+        function toggleAdvanced() {
+            const toggle = document.querySelector('.advanced-toggle');
+            const panel = document.getElementById('advancedPanel');
+            toggle.classList.toggle('open');
+            panel.classList.toggle('open');
+        }
+
+        const resolutionMap = {
+            '1:1': [
+                { value: '1024x1024', label: '1024×1024' },
+                { value: '2048x2048', label: '2048×2048 (2K)' },
+                { value: '4096x4096', label: '4096×4096 (4K)' }
+            ],
+            '3:2': [
+                { value: '1536x1024', label: '1536×1024' },
+                { value: '3072x2048', label: '3072×2048 (2K)' },
+                { value: '4096x2736', label: '4096×2736 (4K)' }
+            ],
+            '2:3': [
+                { value: '1024x1536', label: '1024×1536' },
+                { value: '2048x3072', label: '2048×3072 (2K)' },
+                { value: '2736x4096', label: '2736×4096 (4K)' }
+            ],
+            '16:9': [
+                { value: '1792x1024', label: '1792×1024' },
+                { value: '3584x2048', label: '3584×2048 (2K)' },
+                { value: '4096x2304', label: '4096×2304 (4K)' }
+            ],
+            '9:16': [
+                { value: '1024x1792', label: '1024×1792' },
+                { value: '2048x3584', label: '2048×3584 (2K)' },
+                { value: '2304x4096', label: '2304×4096 (4K)' }
+            ],
+            'auto': [
+                { value: 'auto', label: '自动' }
+            ]
+        };
+
+        function updateResolutions() {
+            const aspect = document.getElementById('aspectSelect').value;
+            const sizeSelect = document.getElementById('sizeSelect');
+            const options = resolutionMap[aspect];
+            sizeSelect.innerHTML = '';
+            options.forEach(opt => {
+                const el = document.createElement('option');
+                el.value = opt.value;
+                el.textContent = opt.label;
+                sizeSelect.appendChild(el);
+            });
+        }
+
+        function getAdvancedParams() {
+            return {
+                size: document.getElementById('sizeSelect').value,
+                quality: document.getElementById('qualitySelect').value,
+                output_format: document.getElementById('outputFormat').value,
+                background: document.getElementById('backgroundSelect').value,
+                output_compression: 100,
+                moderation: document.getElementById('moderationSelect').value
+            };
+        }
+
+        function loadSettings() {
+            const url = localStorage.getItem('gpt_image_api_url') || '';
+            const token = localStorage.getItem('gpt_image_api_token') || '';
+            document.getElementById('apiUrl').value = url;
+            document.getElementById('apiToken').value = token;
+        }
+
+        function openSettings() {
+            loadSettings();
+            document.getElementById('settingsModal').classList.add('active');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('active');
+        }
+
+        function saveSettings() {
+            const url = document.getElementById('apiUrl').value.trim();
+            const token = document.getElementById('apiToken').value.trim();
+            localStorage.setItem('gpt_image_api_url', url);
+            localStorage.setItem('gpt_image_api_token', token);
+            closeSettings();
+        }
+
+        function uploadReference() {
+            document.getElementById('fileInput').click();
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            loadImageFile(file);
+            event.target.value = '';
+        }
+
+        function loadImageFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            referenceImageFile = file;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                referenceImageBase64 = e.target.result.split(',')[1];
+                document.getElementById('refBadge').style.display = 'block';
+
+                const img = document.getElementById('resultImage');
+                img.src = e.target.result;
+                img.style.display = 'block';
+                document.getElementById('placeholder').style.display = 'none';
+                document.getElementById('clearBtn').disabled = false;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function copyImageToClipboard() {
+            const img = document.getElementById('resultImage');
+            if (!img.src || img.style.display === 'none') return;
+            try {
+                const resp = await fetch(img.src);
+                let blob = await resp.blob();
+                if (blob.type !== 'image/png') {
+                    blob = await convertToPng(blob);
+                }
+                await navigator.clipboard.write([
+                    new ClipboardItem({ 'image/png': blob })
+                ]);
+            } catch (err) {
+                console.error('复制失败:', err);
+            }
+        }
+
+        function convertToPng(blob) {
+            return new Promise((resolve, reject) => {
+                const url = URL.createObjectURL(blob);
+                const image = new Image();
+                image.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = image.naturalWidth;
+                    canvas.height = image.naturalHeight;
+                    canvas.getContext('2d').drawImage(image, 0, 0);
+                    URL.revokeObjectURL(url);
+                    canvas.toBlob(b => b ? resolve(b) : reject(new Error('转换失败')), 'image/png');
+                };
+                image.onerror = () => { URL.revokeObjectURL(url); reject(new Error('图片加载失败')); };
+                image.src = url;
+            });
+        }
+
+        function setupImageViewerEvents() {
+            const viewer = document.getElementById('imageViewer');
+            let mouseInside = false;
+
+            viewer.addEventListener('mouseenter', () => { mouseInside = true; });
+            viewer.addEventListener('mouseleave', () => { mouseInside = false; });
+
+            document.addEventListener('paste', (e) => {
+                if (!mouseInside) return;
+                const items = e.clipboardData && e.clipboardData.items;
+                if (!items) return;
+                for (const item of items) {
+                    if (item.type.startsWith('image/')) {
+                        const file = item.getAsFile();
+                        if (file) {
+                            e.preventDefault();
+                            loadImageFile(file);
+                            return;
+                        }
+                    }
+                }
+            });
+
+            document.addEventListener('copy', (e) => {
+                if (!mouseInside) return;
+                const img = document.getElementById('resultImage');
+                if (!img.src || img.style.display === 'none') return;
+                e.preventDefault();
+                copyImageToClipboard();
+            });
+
+            viewer.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                viewer.classList.add('drag-over');
+            });
+
+            viewer.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (e.target === viewer) {
+                    viewer.classList.remove('drag-over');
+                }
+            });
+
+            viewer.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                viewer.classList.remove('drag-over');
+                const files = e.dataTransfer.files;
+                if (files && files.length > 0) {
+                    loadImageFile(files[0]);
+                }
+            });
+        }
+
+        function removeReference(event) {
+            event.stopPropagation();
+            referenceImageBase64 = null;
+            referenceImageFile = null;
+            document.getElementById('refBadge').style.display = 'none';
+
+            if (!generatedImageBase64) {
+                document.getElementById('resultImage').style.display = 'none';
+                document.getElementById('placeholder').style.display = 'block';
+            } else {
+                const img = document.getElementById('resultImage');
+                img.src = 'data:image/png;base64,' + generatedImageBase64;
+            }
+        }
+
+        async function generate() {
+            const baseUrl = localStorage.getItem('gpt_image_api_url');
+            const token = localStorage.getItem('gpt_image_api_token');
+
+            if (!baseUrl || !token) {
+                openSettings();
+                alert('请先设置 API URL 和 Token');
+                return;
+            }
+
+            const prompt = document.getElementById('promptInput').value.trim();
+            if (!prompt) {
+                alert('请输入提示词');
+                return;
+            }
+
+            const params = getAdvancedParams();
+            const sendBtn = document.getElementById('sendBtn');
+            const loading = document.getElementById('loading');
+
+            sendBtn.disabled = true;
+            loading.classList.add('active');
+
+            try {
+                let result;
+                const hasReference = referenceImageBase64 || generatedImageBase64;
+
+                if (hasReference) {
+                    result = await callImageEdit(baseUrl, token, prompt, params);
+                } else {
+                    result = await callImageGeneration(baseUrl, token, prompt, params);
+                }
+
+                generatedImageBase64 = result;
+                const fmt = params.output_format;
+                const mime = fmt === 'jpeg' ? 'image/jpeg' : fmt === 'webp' ? 'image/webp' : 'image/png';
+                const img = document.getElementById('resultImage');
+                img.src = 'data:' + mime + ';base64,' + result;
+                img.style.display = 'block';
+                document.getElementById('placeholder').style.display = 'none';
+                document.getElementById('downloadBtn').disabled = false;
+                document.getElementById('clearBtn').disabled = false;
+
+                referenceImageBase64 = null;
+                referenceImageFile = null;
+                document.getElementById('refBadge').style.display = 'none';
+
+            } catch (err) {
+                alert('生成失败: ' + err.message);
+            } finally {
+                sendBtn.disabled = false;
+                loading.classList.remove('active');
+            }
+        }
+
+        async function callImageGeneration(baseUrl, token, prompt, params) {
+            const url = baseUrl.replace(/\/$/, '') + '/images/generations';
+            const body = {
+                model: 'gpt-image-2',
+                prompt: prompt,
+                n: 1,
+                size: params.size,
+                quality: params.quality,
+                output_format: params.output_format,
+                background: params.background,
+                output_compression: params.output_compression,
+                moderation: params.moderation
+            };
+
+            const resp = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (!resp.ok) {
+                const err = await resp.text();
+                throw new Error(err);
+            }
+
+            const data = await resp.json();
+            return data.data[0].b64_json;
+        }
+
+        async function callImageEdit(baseUrl, token, prompt, params) {
+            const url = baseUrl.replace(/\/$/, '') + '/images/edits';
+
+            const formData = new FormData();
+            formData.append('model', 'gpt-image-2');
+            formData.append('prompt', prompt);
+            formData.append('n', '1');
+            formData.append('size', params.size);
+            formData.append('quality', params.quality);
+            formData.append('output_format', params.output_format);
+            formData.append('background', params.background);
+            formData.append('output_compression', String(params.output_compression));
+            formData.append('moderation', params.moderation);
+
+            let imageToSend;
+            if (referenceImageFile) {
+                imageToSend = referenceImageFile;
+            } else if (referenceImageBase64) {
+                imageToSend = base64ToFile(referenceImageBase64, 'reference.png');
+            } else if (generatedImageBase64) {
+                imageToSend = base64ToFile(generatedImageBase64, 'generated.png');
+            }
+
+            if (imageToSend) {
+                formData.append('image[]', imageToSend);
+            }
+
+            const resp = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                },
+                body: formData
+            });
+
+            if (!resp.ok) {
+                const err = await resp.text();
+                throw new Error(err);
+            }
+
+            const data = await resp.json();
+            return data.data[0].b64_json;
+        }
+
+        function base64ToFile(base64, filename) {
+            const byteChars = atob(base64);
+            const byteNumbers = new Array(byteChars.length);
+            for (let i = 0; i < byteChars.length; i++) {
+                byteNumbers[i] = byteChars.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            return new File([byteArray], filename, { type: 'image/png' });
+        }
+
+        function clearImage() {
+            referenceImageBase64 = null;
+            referenceImageFile = null;
+            generatedImageBase64 = null;
+            const img = document.getElementById('resultImage');
+            img.src = '';
+            img.style.display = 'none';
+            document.getElementById('placeholder').style.display = 'block';
+            document.getElementById('refBadge').style.display = 'none';
+            document.getElementById('downloadBtn').disabled = true;
+            document.getElementById('clearBtn').disabled = true;
+        }
+
+        function downloadImage() {
+            if (!generatedImageBase64) return;
+            const fmt = document.getElementById('outputFormat').value;
+            const mime = fmt === 'jpeg' ? 'image/jpeg' : fmt === 'webp' ? 'image/webp' : 'image/png';
+            const ext = fmt === 'jpeg' ? 'jpg' : fmt;
+            const link = document.createElement('a');
+            link.href = 'data:' + mime + ';base64,' + generatedImageBase64;
+            link.download = 'gpt-image-2-' + Date.now() + '.' + ext;
+            link.click();
+        }
+
+        loadSettings();
+        setupImageViewerEvents();
+    </script>
+</body>
+</html>
