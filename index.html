@@ -163,64 +163,31 @@
             flex: 1.618;
         }
 
-        .theme-wrapper {
-            position: relative;
-            flex: 1;
-        }
-
         .btn-theme {
             background: var(--bg-card);
             color: var(--text-secondary);
-            width: 100%;
+            flex: 1;
             border: 1px solid var(--border);
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path fill='%23999' d='M2 4.5l4 4 4-4'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 12px;
+            padding-right: 32px;
+            font-family: inherit;
         }
 
         .btn-theme:hover {
-            background: var(--bg-hover);
+            background-color: var(--bg-hover);
             border-color: var(--border-strong);
         }
 
-        .theme-menu {
-            display: none;
-            position: absolute;
-            top: calc(100% + 4px);
-            right: 0;
-            left: 0;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 4px;
-            z-index: 200;
-            box-shadow: var(--shadow-tooltip);
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .theme-menu.open {
-            display: flex;
-        }
-
-        .theme-menu button {
-            background: transparent;
-            border: none;
-            padding: 8px 12px;
-            text-align: left;
-            font-size: 13px;
-            color: var(--text-secondary);
-            cursor: pointer;
-            border-radius: 6px;
-            font-family: inherit;
-            font-weight: 500;
-        }
-
-        .theme-menu button:hover {
-            background: var(--bg-hover);
-            color: var(--text-main);
-        }
-
-        .theme-menu button.active {
-            background: var(--bg-accent-soft);
-            color: var(--accent);
+        .btn-theme:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-shadow);
         }
 
         .btn-send {
@@ -452,6 +419,26 @@
             background: var(--accent-strong);
         }
 
+        .info-modal .modal {
+            width: 360px;
+        }
+
+        .info-modal .info-time {
+            font-size: 14px;
+            color: var(--text-secondary);
+            padding: 14px 16px;
+            background: var(--bg-accent-soft);
+            border-radius: 8px;
+            border-left: 3px solid var(--accent);
+            text-align: center;
+        }
+
+        .info-modal .info-time strong {
+            color: var(--accent-strong);
+            font-weight: 600;
+            font-size: 16px;
+        }
+
         .loading-overlay {
             display: none;
             position: absolute;
@@ -672,14 +659,11 @@
         <h1>GPT-Image-2</h1>
         <div class="top-row">
             <button class="btn btn-settings" onclick="openSettings()">设置 API</button>
-            <div class="theme-wrapper">
-                <button class="btn btn-theme" onclick="toggleThemeMenu(event)">颜色设置</button>
-                <div class="theme-menu" id="themeMenu">
-                    <button data-theme="auto" onclick="setTheme('auto')">自动</button>
-                    <button data-theme="light" onclick="setTheme('light')">浅色</button>
-                    <button data-theme="dark" onclick="setTheme('dark')">深色</button>
-                </div>
-            </div>
+            <select class="btn btn-theme" id="themeSelect" onchange="setTheme(this.value)">
+                <option value="auto">颜色：自动</option>
+                <option value="light">颜色：浅色</option>
+                <option value="dark">颜色：深色</option>
+            </select>
         </div>
 
         <div class="advanced-toggle" onclick="toggleAdvanced()">
@@ -788,12 +772,23 @@
         </div>
     </div>
 
+    <div class="modal-overlay info-modal" id="infoModal" onclick="if(event.target===this)closeInfoModal()">
+        <div class="modal">
+            <h2>生成完成</h2>
+            <div class="info-time" id="infoTime"></div>
+            <div class="btn-row">
+                <button class="btn btn-save" onclick="closeInfoModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
     <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="handleFileUpload(event)" />
 
     <script>
         let referenceImageBase64 = null;
         let referenceImageFile = null;
         let generatedImageBase64 = null;
+        let isGenerating = false;
 
         function getStoredTheme() {
             try {
@@ -809,9 +804,8 @@
                 ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
                 : stored;
             document.documentElement.setAttribute('data-theme', effective);
-            document.querySelectorAll('.theme-menu button').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.theme === stored);
-            });
+            const select = document.getElementById('themeSelect');
+            if (select) select.value = stored;
         }
 
         function setTheme(theme) {
@@ -819,19 +813,7 @@
                 localStorage.setItem('gpt_image_theme', theme);
             } catch (e) {}
             applyTheme();
-            document.getElementById('themeMenu').classList.remove('open');
         }
-
-        function toggleThemeMenu(event) {
-            if (event) event.stopPropagation();
-            document.getElementById('themeMenu').classList.toggle('open');
-        }
-
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.theme-wrapper')) {
-                document.getElementById('themeMenu').classList.remove('open');
-            }
-        });
 
         const darkModeMq = window.matchMedia('(prefers-color-scheme: dark)');
         const darkModeListener = () => {
@@ -933,6 +915,7 @@
         }
 
         function uploadReference() {
+            if (isGenerating) return;
             document.getElementById('fileInput').click();
         }
 
@@ -1002,7 +985,7 @@
             viewer.addEventListener('mouseleave', () => { mouseInside = false; });
 
             document.addEventListener('paste', (e) => {
-                if (!mouseInside) return;
+                if (!mouseInside || isGenerating) return;
                 const items = e.clipboardData && e.clipboardData.items;
                 if (!items) return;
                 for (const item of items) {
@@ -1028,6 +1011,7 @@
             viewer.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                if (isGenerating) return;
                 viewer.classList.add('drag-over');
             });
 
@@ -1043,6 +1027,7 @@
                 e.preventDefault();
                 e.stopPropagation();
                 viewer.classList.remove('drag-over');
+                if (isGenerating) return;
                 const files = e.dataTransfer.files;
                 if (files && files.length > 0) {
                     loadImageFile(files[0]);
@@ -1085,18 +1070,23 @@
             const sendBtn = document.getElementById('sendBtn');
             const loading = document.getElementById('loading');
 
+            isGenerating = true;
             sendBtn.disabled = true;
             loading.classList.add('active');
+            const startTime = Date.now();
 
             try {
-                let result;
+                let response;
                 const hasReference = referenceImageBase64 || generatedImageBase64;
 
                 if (hasReference) {
-                    result = await callImageEdit(baseUrl, token, prompt, params);
+                    response = await callImageEdit(baseUrl, token, prompt, params);
                 } else {
-                    result = await callImageGeneration(baseUrl, token, prompt, params);
+                    response = await callImageGeneration(baseUrl, token, prompt, params);
                 }
+
+                const elapsedMs = Date.now() - startTime;
+                const result = response.data[0].b64_json;
 
                 generatedImageBase64 = result;
                 const fmt = params.output_format;
@@ -1112,12 +1102,35 @@
                 referenceImageFile = null;
                 document.getElementById('refBadge').style.display = 'none';
 
+                showInfoModal(elapsedMs);
+
             } catch (err) {
                 alert('生成失败: ' + err.message);
             } finally {
+                isGenerating = false;
                 sendBtn.disabled = false;
                 loading.classList.remove('active');
             }
+        }
+
+        function formatElapsed(ms) {
+            const totalTenths = Math.round(ms / 100);
+            const minutes = Math.floor(totalTenths / 600);
+            const remainingTenths = totalTenths - minutes * 600;
+            const seconds = Math.floor(remainingTenths / 10);
+            const tenths = remainingTenths % 10;
+            const secStr = seconds + '.' + tenths + '秒';
+            return minutes > 0 ? minutes + '分' + secStr : secStr;
+        }
+
+        function showInfoModal(elapsedMs) {
+            document.getElementById('infoTime').innerHTML =
+                '这张图片花了 <strong>' + formatElapsed(elapsedMs) + '</strong> 生成';
+            document.getElementById('infoModal').classList.add('active');
+        }
+
+        function closeInfoModal() {
+            document.getElementById('infoModal').classList.remove('active');
         }
 
         async function callImageGeneration(baseUrl, token, prompt, params) {
@@ -1148,8 +1161,7 @@
                 throw new Error(err);
             }
 
-            const data = await resp.json();
-            return data.data[0].b64_json;
+            return await resp.json();
         }
 
         async function callImageEdit(baseUrl, token, prompt, params) {
@@ -1192,8 +1204,7 @@
                 throw new Error(err);
             }
 
-            const data = await resp.json();
-            return data.data[0].b64_json;
+            return await resp.json();
         }
 
         function base64ToFile(base64, filename) {
