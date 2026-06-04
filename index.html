@@ -838,6 +838,7 @@
             min-height: 0;
             overflow-y: auto;
             padding: 2px;
+            position: relative;
         }
 
         .fav-item {
@@ -1706,6 +1707,7 @@
         let favDragOffsetX = 0;
         let favDragOffsetY = 0;
         let favDragLastY = 0;
+        let favDragHandle = null;
         let favAutoScrollRAF = null;
         let pendingImport = null;
         let pendingDeleteIndex = null;
@@ -1753,10 +1755,12 @@
         }
 
         function closeFavorites() {
+            finishFavDrag(true);
             document.getElementById('favModal').classList.remove('active');
         }
 
         function toggleSortMode() {
+            finishFavDrag(true);
             favSortMode = !favSortMode;
             document.getElementById('favSortBtn').classList.toggle('active', favSortMode);
             renderFavorites();
@@ -1790,6 +1794,7 @@
         }
 
         function renderFavorites() {
+            finishFavDrag(false);
             const list = document.getElementById('favList');
             const box = document.querySelector('.fav-modal-box');
             const query = document.getElementById('favSearch').value.trim();
@@ -1857,6 +1862,7 @@
 
         function startFavDrag(item, handle, e) {
             favDragEl = item;
+            favDragHandle = handle;
             favDragPointerId = e.pointerId;
             favDragLastY = e.clientY;
 
@@ -1876,9 +1882,11 @@
             item.classList.add('fav-placeholder');
 
             try { handle.setPointerCapture(e.pointerId); } catch (err) {}
-            handle.addEventListener('pointermove', onFavDragMove);
-            handle.addEventListener('pointerup', onFavDragEnd);
-            handle.addEventListener('pointercancel', onFavDragEnd);
+            window.addEventListener('pointermove', onFavDragMove, { capture: true, passive: false });
+            window.addEventListener('pointerup', onFavDragEnd, true);
+            window.addEventListener('pointercancel', onFavDragEnd, true);
+            window.addEventListener('blur', cancelFavDrag);
+            document.addEventListener('visibilitychange', onFavVisibilityChange);
         }
 
         function onFavDragMove(e) {
@@ -1942,26 +1950,50 @@
 
         function onFavDragEnd(e) {
             if (e.pointerId !== favDragPointerId) return;
-            const handle = e.currentTarget;
-            handle.removeEventListener('pointermove', onFavDragMove);
-            handle.removeEventListener('pointerup', onFavDragEnd);
-            handle.removeEventListener('pointercancel', onFavDragEnd);
-            try { handle.releasePointerCapture(e.pointerId); } catch (err) {}
+            e.preventDefault();
+            finishFavDrag(true);
+        }
 
+        function cancelFavDrag() {
+            finishFavDrag(false);
+        }
+
+        function onFavVisibilityChange() {
+            if (document.hidden) cancelFavDrag();
+        }
+
+        function finishFavDrag(commit) {
+            if (!favDragEl && !favDragGhost && favDragPointerId === null) return;
+            const handle = favDragHandle;
+            const pointerId = favDragPointerId;
+
+            window.removeEventListener('pointermove', onFavDragMove, true);
+            window.removeEventListener('pointerup', onFavDragEnd, true);
+            window.removeEventListener('pointercancel', onFavDragEnd, true);
+            window.removeEventListener('blur', cancelFavDrag);
+            document.removeEventListener('visibilitychange', onFavVisibilityChange);
+            if (handle && pointerId !== null) {
+                try { handle.releasePointerCapture(pointerId); } catch (err) {}
+            }
             stopFavAutoScroll();
             if (favDragGhost) { favDragGhost.remove(); favDragGhost = null; }
             if (favDragEl) favDragEl.classList.remove('fav-placeholder');
             favDragEl = null;
             favDragPointerId = null;
-            commitOrderFromDom();
+            favDragHandle = null;
+            if (commit) commitOrderFromDom();
         }
 
-        function getDragAfterElement(list, y) {
+        // 用布局坐标（offsetTop/offsetHeight）做命中检测，避免被 FLIP 动画的
+        // transform 干扰——getBoundingClientRect 会返回动画途中的位置，导致来回抖动卡死。
+        function getDragAfterElement(list, clientY) {
+            const listRect = list.getBoundingClientRect();
+            const contentY = clientY - listRect.top + list.scrollTop;
             const items = [...list.querySelectorAll('.fav-item:not(.fav-placeholder)')];
             let closest = { offset: -Infinity, element: null };
             for (const child of items) {
-                const rect = child.getBoundingClientRect();
-                const offset = y - rect.top - rect.height / 2;
+                const mid = child.offsetTop + child.offsetHeight / 2;
+                const offset = contentY - mid;
                 if (offset < 0 && offset > closest.offset) {
                     closest = { offset, element: child };
                 }
