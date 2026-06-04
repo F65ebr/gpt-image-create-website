@@ -956,6 +956,18 @@
             opacity: 0.7;
         }
 
+        /* 跟随手指/光标的浮动副本 */
+        .fav-drag-ghost {
+            position: fixed;
+            z-index: 1200;
+            margin: 0 !important;
+            pointer-events: none;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            border-color: var(--accent) !important;
+            opacity: 0.95;
+            transform: scale(1.02);
+        }
+
         .fav-modal-box.is-sorting .fav-item-main { cursor: default; }
 
         /* 创建/导入用的小弹窗（叠在收藏弹窗之上） */
@@ -1689,6 +1701,12 @@
         let favorites = [];
         let favSortMode = false;
         let favDragEl = null;
+        let favDragGhost = null;
+        let favDragPointerId = null;
+        let favDragOffsetX = 0;
+        let favDragOffsetY = 0;
+        let favDragLastY = 0;
+        let favAutoScrollRAF = null;
         let pendingImport = null;
         let pendingDeleteIndex = null;
 
@@ -1812,7 +1830,6 @@
                     actionBtn.className = 'fav-action-btn fav-drag-btn';
                     actionBtn.innerHTML = '&#9776;';
                     actionBtn.title = '拖动排序';
-                    actionBtn.setAttribute('draggable', 'true');
                     attachDragHandlers(actionBtn, item);
                 } else {
                     actionBtn.className = 'fav-action-btn fav-del-btn';
@@ -1828,23 +1845,115 @@
             updateFavFade();
         }
 
+        // 用 Pointer Events 实现拖动排序，统一支持鼠标与触屏（HTML5 拖放在移动端不触发）
         function attachDragHandlers(handle, item) {
-            handle.addEventListener('dragstart', (e) => {
-                favDragEl = item;
-                e.dataTransfer.effectAllowed = 'move';
-                try {
-                    e.dataTransfer.setData('text/plain', item.dataset.index);
-                    // 抓的是右侧手柄，让光标贴近条目右边缘，使拖影出现在光标左侧
-                    e.dataTransfer.setDragImage(item, item.offsetWidth - 20, item.offsetHeight / 2);
-                } catch (err) {}
-                // 延迟加占位样式，避免影响拖拽快照
-                setTimeout(() => item.classList.add('fav-placeholder'), 0);
+            handle.style.touchAction = 'none'; // 阻止触屏在手柄上的滚动/缩放手势
+            handle.addEventListener('pointerdown', (e) => {
+                if (favDragEl) return;
+                e.preventDefault();
+                startFavDrag(item, handle, e);
             });
-            handle.addEventListener('dragend', () => {
-                item.classList.remove('fav-placeholder');
-                favDragEl = null;
-                commitOrderFromDom();
-            });
+        }
+
+        function startFavDrag(item, handle, e) {
+            favDragEl = item;
+            favDragPointerId = e.pointerId;
+            favDragLastY = e.clientY;
+
+            const rect = item.getBoundingClientRect();
+            favDragOffsetX = e.clientX - rect.left;
+            favDragOffsetY = e.clientY - rect.top;
+
+            // 跟随手指/光标的浮动副本
+            favDragGhost = item.cloneNode(true);
+            favDragGhost.classList.add('fav-drag-ghost');
+            favDragGhost.style.width = rect.width + 'px';
+            favDragGhost.style.height = rect.height + 'px';
+            favDragGhost.style.left = rect.left + 'px';
+            favDragGhost.style.top = rect.top + 'px';
+            document.body.appendChild(favDragGhost);
+
+            item.classList.add('fav-placeholder');
+
+            try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+            handle.addEventListener('pointermove', onFavDragMove);
+            handle.addEventListener('pointerup', onFavDragEnd);
+            handle.addEventListener('pointercancel', onFavDragEnd);
+        }
+
+        function onFavDragMove(e) {
+            if (!favDragEl || e.pointerId !== favDragPointerId) return;
+            e.preventDefault();
+            favDragLastY = e.clientY;
+
+            if (favDragGhost) {
+                favDragGhost.style.left = (e.clientX - favDragOffsetX) + 'px';
+                favDragGhost.style.top = (e.clientY - favDragOffsetY) + 'px';
+            }
+
+            reorderToPointer(e.clientY);
+            handleFavAutoScroll(e.clientY);
+        }
+
+        function reorderToPointer(clientY) {
+            const list = document.getElementById('favList');
+            const after = getDragAfterElement(list, clientY);
+            if (after == null) {
+                if (list.lastElementChild !== favDragEl) {
+                    flipReorder(list, () => list.appendChild(favDragEl));
+                }
+            } else if (after !== favDragEl) {
+                flipReorder(list, () => list.insertBefore(favDragEl, after));
+            }
+        }
+
+        // 指针接近列表上/下边缘时自动滚动，方便在长列表中移动
+        function handleFavAutoScroll(clientY) {
+            const list = document.getElementById('favList');
+            const rect = list.getBoundingClientRect();
+            const zone = 36;
+            let speed = 0;
+            if (clientY < rect.top + zone) {
+                speed = -Math.ceil((rect.top + zone - clientY) / zone * 12);
+            } else if (clientY > rect.bottom - zone) {
+                speed = Math.ceil((clientY - (rect.bottom - zone)) / zone * 12);
+            }
+            if (speed === 0) {
+                stopFavAutoScroll();
+                return;
+            }
+            if (favAutoScrollRAF) return;
+            const step = () => {
+                if (!favDragEl) { stopFavAutoScroll(); return; }
+                list.scrollTop += speed;
+                reorderToPointer(favDragLastY);
+                updateFavFade();
+                favAutoScrollRAF = requestAnimationFrame(step);
+            };
+            favAutoScrollRAF = requestAnimationFrame(step);
+        }
+
+        function stopFavAutoScroll() {
+            if (favAutoScrollRAF) {
+                cancelAnimationFrame(favAutoScrollRAF);
+                favAutoScrollRAF = null;
+            }
+        }
+
+        function onFavDragEnd(e) {
+            if (e.pointerId !== favDragPointerId) return;
+            const handle = e.currentTarget;
+            handle.removeEventListener('pointermove', onFavDragMove);
+            handle.removeEventListener('pointerup', onFavDragEnd);
+            handle.removeEventListener('pointercancel', onFavDragEnd);
+            try { handle.releasePointerCapture(e.pointerId); } catch (err) {}
+
+            stopFavAutoScroll();
+            if (favDragGhost) { favDragGhost.remove(); favDragGhost = null; }
+            if (favDragEl) favDragEl.classList.remove('fav-placeholder');
+            favDragEl = null;
+            favDragPointerId = null;
+            commitOrderFromDom();
         }
 
         function getDragAfterElement(list, y) {
@@ -1869,7 +1978,7 @@
             mutate();
 
             list.querySelectorAll('.fav-item').forEach(el => {
-                if (el === favDragEl) return; // 被拖项跟随光标，不参与滑动
+                if (el === favDragEl) return; // 被拖项由浮动副本表示，不参与滑动
                 const first = firstRects.get(el);
                 if (!first) return;
                 const last = el.getBoundingClientRect();
@@ -1880,26 +1989,6 @@
                 el.getBoundingClientRect(); // 强制回流，使初始位移生效
                 el.style.transition = 'transform 0.18s ease';
                 el.style.transform = '';
-            });
-        }
-
-        function setupFavDragContainer() {
-            const list = document.getElementById('favList');
-            list.addEventListener('dragover', (e) => {
-                if (!favDragEl) return;
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-                const after = getDragAfterElement(list, e.clientY);
-                if (after == null) {
-                    if (list.lastElementChild !== favDragEl) {
-                        flipReorder(list, () => list.appendChild(favDragEl));
-                    }
-                } else if (after !== favDragEl) {
-                    flipReorder(list, () => list.insertBefore(favDragEl, after));
-                }
-            });
-            list.addEventListener('drop', (e) => {
-                if (favDragEl) e.preventDefault();
             });
         }
 
@@ -2076,7 +2165,6 @@
         loadSettings();
         loadFavorites();
         setupImageViewerEvents();
-        setupFavDragContainer();
         updateResolutions();
     </script>
 </body>
