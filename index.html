@@ -370,7 +370,7 @@
         }
 
         .modal-overlay {
-            display: none;
+            display: flex;
             position: fixed;
             top: 0;
             left: 0;
@@ -381,10 +381,17 @@
             z-index: 1000;
             align-items: center;
             justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.2s ease, visibility 0s linear 0.2s;
         }
 
         .modal-overlay.active {
-            display: flex;
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transition: opacity 0.2s ease, visibility 0s linear 0s;
         }
 
         .modal {
@@ -394,6 +401,12 @@
             width: 400px;
             max-width: 90%;
             box-shadow: var(--shadow-modal);
+            transform: scale(0.96);
+            transition: transform 0.2s ease;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
         }
 
         .modal h2 {
@@ -560,19 +573,38 @@
             transform: rotate(180deg);
         }
 
+        .advanced-section {
+            display: flex;
+            flex-direction: column;
+        }
+
         .advanced-panel {
-            display: none;
+            display: grid;
+            grid-template-rows: 0fr;
+            opacity: 0;
+            margin-top: 0;
+            transition: grid-template-rows 0.25s ease, opacity 0.2s ease, margin-top 0.25s ease;
+        }
+
+        .advanced-panel.open {
+            grid-template-rows: 1fr;
+            opacity: 1;
+            margin-top: 12px;
+        }
+
+        .advanced-panel-clip {
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        .advanced-panel-inner {
+            display: flex;
             flex-direction: column;
             gap: 12px;
             padding: 14px;
             background: var(--bg-card);
             border-radius: 10px;
             border: 1px solid var(--border);
-            overflow: visible;
-        }
-
-        .advanced-panel.open {
-            display: flex;
         }
 
         .param-group {
@@ -690,6 +722,287 @@
                 min-height: 100px;
             }
         }
+
+        /* ---------- 收藏夹 ---------- */
+        .btn-favorites {
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            width: 100%;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-favorites:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-strong);
+        }
+
+        .modal.fav-modal-box {
+            width: 480px;
+            max-width: 92%;
+            max-height: 66vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .fav-header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .fav-search {
+            flex: 2;
+            min-width: 0;
+            padding: 9px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        .fav-search:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-shadow);
+        }
+
+        .fav-sort-btn {
+            flex: 1;
+            min-width: 0;
+            padding: 9px 12px;
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: inherit;
+            transition: all 0.15s ease;
+        }
+
+        .fav-sort-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-strong);
+        }
+
+        .fav-sort-btn.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: transparent;
+        }
+
+        .fav-list-wrap {
+            flex: 1 1 auto;
+            min-height: 0;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .fav-list-wrap::before,
+        .fav-list-wrap::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 24px;
+            pointer-events: none;
+            z-index: 2;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .fav-list-wrap::before {
+            top: 0;
+            background: linear-gradient(to bottom, var(--bg-card), transparent);
+        }
+
+        .fav-list-wrap::after {
+            bottom: 0;
+            background: linear-gradient(to top, var(--bg-card), transparent);
+        }
+
+        .fav-list-wrap.fade-top::before { opacity: 1; }
+        .fav-list-wrap.fade-bottom::after { opacity: 1; }
+
+        .fav-list {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 2px;
+        }
+
+        .fav-item {
+            display: flex;
+            align-items: stretch;
+            gap: 6px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            transition: border-color 0.15s ease, opacity 0.15s ease;
+        }
+
+        .fav-item:last-child { margin-bottom: 0; }
+
+        .fav-item-main {
+            flex: 1;
+            min-width: 0;
+            cursor: pointer;
+        }
+
+        .fav-item-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .fav-item-preview {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 3px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .fav-action-btn {
+            flex: 0 0 auto;
+            width: 30px;
+            align-self: center;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 14px;
+            border-radius: 6px;
+            padding: 8px 0;
+            transition: all 0.15s ease;
+        }
+
+        .fav-del-btn:hover {
+            background: var(--bg-accent-soft);
+            color: var(--accent);
+        }
+
+        .fav-drag-btn { cursor: grab; }
+        .fav-drag-btn:active { cursor: grabbing; }
+        .fav-drag-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-secondary);
+        }
+
+        .fav-hl {
+            background: var(--accent-shadow);
+            color: var(--accent-strong);
+            border-radius: 2px;
+            padding: 0 1px;
+        }
+
+        .fav-empty {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+            padding: 36px 12px;
+            line-height: 1.6;
+        }
+
+        .fav-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .fav-actions .btn {
+            flex: 1;
+            background: var(--bg-hover);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .fav-actions .btn:hover {
+            background: var(--bg-panel);
+            border-color: var(--border-strong);
+        }
+
+        .fav-actions .btn-primary {
+            background: var(--accent);
+            color: #fff;
+            border-color: transparent;
+        }
+
+        .fav-actions .btn-primary:hover {
+            background: var(--accent-strong);
+            border-color: transparent;
+        }
+
+        /* 拖动排序时的占位提示 */
+        .fav-item.fav-placeholder {
+            background: var(--bg-accent-soft);
+            border: 1px dashed var(--accent);
+            box-shadow: none;
+            opacity: 0.7;
+        }
+
+        .fav-modal-box.is-sorting .fav-item-main { cursor: default; }
+
+        /* 创建/导入用的小弹窗（叠在收藏弹窗之上） */
+        .fav-prompt-modal { z-index: 1100; }
+
+        .fav-prompt-modal .modal { width: 360px; }
+
+        .fav-prompt-modal textarea {
+            width: 100%;
+            min-height: 70px;
+            resize: vertical;
+            padding: 10px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 14px;
+            font-family: inherit;
+            line-height: 1.5;
+        }
+
+        .fav-prompt-modal textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-shadow);
+        }
+
+        .fav-prompt-modal .fav-prompt-msg {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 4px;
+        }
+
+        .fav-prompt-modal .fav-prompt-msg strong {
+            color: var(--accent-strong);
+            font-weight: 600;
+        }
+
+        .fav-prompt-modal .modal .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .fav-prompt-modal .modal .btn-primary:hover {
+            background: var(--accent-strong);
+        }
     </style>
 </head>
 <body>
@@ -704,11 +1017,14 @@
             </select>
         </div>
 
-        <div class="advanced-toggle" onclick="toggleAdvanced()">
-            <span>高级选项</span>
-            <span class="arrow">&#9662;</span>
-        </div>
-        <div class="advanced-panel" id="advancedPanel">
+        <div class="advanced-section">
+            <div class="advanced-toggle" onclick="toggleAdvanced()">
+                <span>高级选项</span>
+                <span class="arrow">&#9662;</span>
+            </div>
+            <div class="advanced-panel" id="advancedPanel">
+            <div class="advanced-panel-clip">
+            <div class="advanced-panel-inner">
             <div class="param-row">
                 <div class="param-group">
                     <label>图像比例<span class="tooltip">生成图片的宽高比。1:1 适合头像图标，3:2 横版适合风景横幅，2:3 竖版适合海报壁纸。</span></label>
@@ -764,7 +1080,12 @@
                     </select>
                 </div>
             </div>
+            </div>
+            </div>
         </div>
+        </div>
+
+        <button class="btn btn-favorites" onclick="openFavorites()">收藏</button>
 
         <div class="prompt-area">
             <label>提示词</label>
@@ -828,6 +1149,70 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="favModal" onclick="if(event.target===this)closeFavorites()">
+        <div class="modal fav-modal-box">
+            <div class="fav-header">
+                <input type="text" class="fav-search" id="favSearch" placeholder="搜索标题或提示词..." oninput="renderFavorites()" />
+                <button class="fav-sort-btn" id="favSortBtn" onclick="toggleSortMode()">排序</button>
+            </div>
+            <div class="fav-list-wrap" id="favListWrap">
+                <div class="fav-list" id="favList"></div>
+            </div>
+            <div class="fav-actions">
+                <button class="btn btn-primary" onclick="createFavorite()">创建</button>
+                <button class="btn" onclick="importFavorites()">导入</button>
+                <button class="btn" onclick="exportFavorites()">导出</button>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="favFileInput" accept="application/json,.json" style="display:none;" onchange="handleFavImport(event)" />
+
+    <div class="modal-overlay fav-prompt-modal" id="favTitleModal" onclick="if(event.target===this)closeTitleModal()">
+        <div class="modal">
+            <h2>收藏提示词</h2>
+            <label for="favTitleInput">标题</label>
+            <input type="text" id="favTitleInput" placeholder="给这条收藏起个名字..." />
+            <div class="btn-row">
+                <button class="btn btn-cancel" onclick="closeTitleModal()">取消</button>
+                <button class="btn btn-save" onclick="confirmCreateFavorite()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay fav-prompt-modal" id="favImportModal" onclick="if(event.target===this)closeImportModal()">
+        <div class="modal">
+            <h2>导入收藏</h2>
+            <div class="fav-prompt-msg" id="favImportMsg"></div>
+            <div class="btn-row">
+                <button class="btn btn-cancel" onclick="closeImportModal()">取消</button>
+                <button class="btn btn-save" onclick="resolveImport(false)">覆盖</button>
+                <button class="btn btn-primary" onclick="resolveImport(true)">追加</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay fav-prompt-modal" id="favDeleteModal" onclick="if(event.target===this)closeDeleteModal()">
+        <div class="modal">
+            <h2>删除收藏</h2>
+            <div class="fav-prompt-msg" id="favDeleteMsg"></div>
+            <div class="btn-row">
+                <button class="btn btn-cancel" onclick="closeDeleteModal()">取消</button>
+                <button class="btn btn-primary" onclick="confirmDeleteFavorite()">删除</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay fav-prompt-modal" id="favAlertModal" onclick="if(event.target===this)closeFavAlert()">
+        <div class="modal">
+            <h2 id="favAlertTitle">提示</h2>
+            <div class="fav-prompt-msg" id="favAlertMsg"></div>
+            <div class="btn-row">
+                <button class="btn btn-primary" onclick="closeFavAlert()">知道了</button>
+            </div>
+        </div>
+    </div>
+
     <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="handleFileUpload(event)" />
 
     <script>
@@ -874,8 +1259,20 @@
         function toggleAdvanced() {
             const toggle = document.querySelector('.advanced-toggle');
             const panel = document.getElementById('advancedPanel');
-            toggle.classList.toggle('open');
-            panel.classList.toggle('open');
+            const clip = panel.querySelector('.advanced-panel-clip');
+            const willOpen = !panel.classList.contains('open');
+            toggle.classList.toggle('open', willOpen);
+            panel.classList.toggle('open', willOpen);
+            clearTimeout(panel._ovfTimer);
+            if (willOpen) {
+                // 展开动画结束后放开溢出，让 tooltip 能显示在面板之外
+                panel._ovfTimer = setTimeout(() => {
+                    if (panel.classList.contains('open')) clip.style.overflow = 'visible';
+                }, 260);
+            } else {
+                // 收起前立即恢复裁剪，保证收回动画平滑
+                clip.style.overflow = '';
+            }
         }
 
         const resolutionMap = {
@@ -1287,9 +1684,399 @@
             link.click();
         }
 
+        /* ---------- 收藏夹 ---------- */
+        const FAV_KEY = 'gpt_image_favorites';
+        let favorites = [];
+        let favSortMode = false;
+        let favDragEl = null;
+        let pendingImport = null;
+        let pendingDeleteIndex = null;
+
+        function loadFavorites() {
+            try {
+                const raw = localStorage.getItem(FAV_KEY);
+                const parsed = raw ? JSON.parse(raw) : [];
+                favorites = Array.isArray(parsed) ? parsed.filter(isValidFav) : [];
+            } catch (e) {
+                favorites = [];
+            }
+        }
+
+        function isValidFav(item) {
+            return item && typeof item === 'object'
+                && typeof item.title === 'string'
+                && typeof item.prompt === 'string';
+        }
+
+        function saveFavorites() {
+            try {
+                localStorage.setItem(FAV_KEY, JSON.stringify(favorites));
+            } catch (e) {
+                favAlert('保存失败', '收藏保存失败：' + escapeHtml(e.message));
+            }
+        }
+
+        function favAlert(title, msgHtml) {
+            document.getElementById('favAlertTitle').textContent = title;
+            document.getElementById('favAlertMsg').innerHTML = msgHtml;
+            document.getElementById('favAlertModal').classList.add('active');
+        }
+
+        function closeFavAlert() {
+            document.getElementById('favAlertModal').classList.remove('active');
+        }
+
+        function openFavorites() {
+            favSortMode = false;
+            document.getElementById('favSortBtn').classList.remove('active');
+            document.getElementById('favSearch').value = '';
+            document.getElementById('favModal').classList.add('active');
+            renderFavorites();
+        }
+
+        function closeFavorites() {
+            document.getElementById('favModal').classList.remove('active');
+        }
+
+        function toggleSortMode() {
+            favSortMode = !favSortMode;
+            document.getElementById('favSortBtn').classList.toggle('active', favSortMode);
+            renderFavorites();
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        function highlight(text, query) {
+            if (!query) return escapeHtml(text);
+            const lower = text.toLowerCase();
+            const q = query.toLowerCase();
+            let result = '';
+            let pos = 0;
+            let idx;
+            while ((idx = lower.indexOf(q, pos)) !== -1) {
+                result += escapeHtml(text.slice(pos, idx));
+                result += '<span class="fav-hl">' + escapeHtml(text.slice(idx, idx + query.length)) + '</span>';
+                pos = idx + query.length;
+            }
+            result += escapeHtml(text.slice(pos));
+            return result;
+        }
+
+        function makePreview(prompt) {
+            const flat = prompt.replace(/\s+/g, ' ').trim();
+            return flat.length > 50 ? flat.slice(0, 50) + '…' : flat;
+        }
+
+        function renderFavorites() {
+            const list = document.getElementById('favList');
+            const box = document.querySelector('.fav-modal-box');
+            const query = document.getElementById('favSearch').value.trim();
+            const q = query.toLowerCase();
+
+            box.classList.toggle('is-sorting', favSortMode);
+
+            const matches = favorites
+                .map((fav, index) => ({ fav, index }))
+                .filter(({ fav }) => !q
+                    || fav.title.toLowerCase().includes(q)
+                    || fav.prompt.toLowerCase().includes(q));
+
+            if (matches.length === 0) {
+                list.innerHTML = '<div class="fav-empty">' +
+                    (favorites.length === 0 ? '还没有收藏，点击下方「创建」保存当前提示词。' : '没有匹配的收藏。') +
+                    '</div>';
+                updateFavFade();
+                return;
+            }
+
+            list.innerHTML = '';
+            matches.forEach(({ fav, index }) => {
+                const item = document.createElement('div');
+                item.className = 'fav-item';
+                item.dataset.index = index;
+
+                const main = document.createElement('div');
+                main.className = 'fav-item-main';
+                main.innerHTML =
+                    '<div class="fav-item-title">' + highlight(fav.title, query) + '</div>' +
+                    '<div class="fav-item-preview">' + highlight(makePreview(fav.prompt), query) + '</div>';
+                if (!favSortMode) main.onclick = () => applyFavorite(index);
+                item.appendChild(main);
+
+                const actionBtn = document.createElement('button');
+                if (favSortMode) {
+                    actionBtn.className = 'fav-action-btn fav-drag-btn';
+                    actionBtn.innerHTML = '&#9776;';
+                    actionBtn.title = '拖动排序';
+                    actionBtn.setAttribute('draggable', 'true');
+                    attachDragHandlers(actionBtn, item);
+                } else {
+                    actionBtn.className = 'fav-action-btn fav-del-btn';
+                    actionBtn.innerHTML = '&#10005;';
+                    actionBtn.title = '删除';
+                    actionBtn.onclick = (e) => { e.stopPropagation(); deleteFavorite(index); };
+                }
+                item.appendChild(actionBtn);
+
+                list.appendChild(item);
+            });
+
+            updateFavFade();
+        }
+
+        function attachDragHandlers(handle, item) {
+            handle.addEventListener('dragstart', (e) => {
+                favDragEl = item;
+                e.dataTransfer.effectAllowed = 'move';
+                try {
+                    e.dataTransfer.setData('text/plain', item.dataset.index);
+                    // 抓的是右侧手柄，让光标贴近条目右边缘，使拖影出现在光标左侧
+                    e.dataTransfer.setDragImage(item, item.offsetWidth - 20, item.offsetHeight / 2);
+                } catch (err) {}
+                // 延迟加占位样式，避免影响拖拽快照
+                setTimeout(() => item.classList.add('fav-placeholder'), 0);
+            });
+            handle.addEventListener('dragend', () => {
+                item.classList.remove('fav-placeholder');
+                favDragEl = null;
+                commitOrderFromDom();
+            });
+        }
+
+        function getDragAfterElement(list, y) {
+            const items = [...list.querySelectorAll('.fav-item:not(.fav-placeholder)')];
+            let closest = { offset: -Infinity, element: null };
+            for (const child of items) {
+                const rect = child.getBoundingClientRect();
+                const offset = y - rect.top - rect.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    closest = { offset, element: child };
+                }
+            }
+            return closest.element;
+        }
+
+        // FLIP 动画：记录变更前位置，DOM 重排后用逆向位移过渡到新位置
+        function flipReorder(list, mutate) {
+            const items = [...list.querySelectorAll('.fav-item')];
+            const firstRects = new Map();
+            items.forEach(el => firstRects.set(el, el.getBoundingClientRect()));
+
+            mutate();
+
+            list.querySelectorAll('.fav-item').forEach(el => {
+                if (el === favDragEl) return; // 被拖项跟随光标，不参与滑动
+                const first = firstRects.get(el);
+                if (!first) return;
+                const last = el.getBoundingClientRect();
+                const dy = first.top - last.top;
+                if (Math.abs(dy) < 1) return;
+                el.style.transition = 'none';
+                el.style.transform = 'translateY(' + dy + 'px)';
+                el.getBoundingClientRect(); // 强制回流，使初始位移生效
+                el.style.transition = 'transform 0.18s ease';
+                el.style.transform = '';
+            });
+        }
+
+        function setupFavDragContainer() {
+            const list = document.getElementById('favList');
+            list.addEventListener('dragover', (e) => {
+                if (!favDragEl) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                const after = getDragAfterElement(list, e.clientY);
+                if (after == null) {
+                    if (list.lastElementChild !== favDragEl) {
+                        flipReorder(list, () => list.appendChild(favDragEl));
+                    }
+                } else if (after !== favDragEl) {
+                    flipReorder(list, () => list.insertBefore(favDragEl, after));
+                }
+            });
+            list.addEventListener('drop', (e) => {
+                if (favDragEl) e.preventDefault();
+            });
+        }
+
+        // 拖动结束后，按 DOM 中可见项的新顺序回写 favorites 数组。
+        // 过滤状态下，仅重排当前可见项所占据的位置，隐藏项保持原位。
+        function commitOrderFromDom() {
+            const list = document.getElementById('favList');
+            const domIndexes = [...list.querySelectorAll('.fav-item')]
+                .map(el => parseInt(el.dataset.index, 10))
+                .filter(n => !isNaN(n));
+            if (domIndexes.length === 0) return;
+
+            const slots = [...domIndexes].sort((a, b) => a - b);
+            const reordered = domIndexes.map(i => favorites[i]);
+            const next = favorites.slice();
+            slots.forEach((slot, i) => { next[slot] = reordered[i]; });
+
+            const changed = next.some((f, i) => f !== favorites[i]);
+            favorites = next;
+            if (changed) saveFavorites();
+            renderFavorites();
+        }
+
+        function applyFavorite(index) {
+            const fav = favorites[index];
+            if (!fav) return;
+            document.getElementById('promptInput').value = fav.prompt;
+            closeFavorites();
+        }
+
+        function deleteFavorite(index) {
+            const fav = favorites[index];
+            if (!fav) return;
+            pendingDeleteIndex = index;
+            document.getElementById('favDeleteMsg').innerHTML =
+                '确定删除收藏「<strong>' + escapeHtml(fav.title) + '</strong>」吗？此操作无法撤销。';
+            document.getElementById('favDeleteModal').classList.add('active');
+        }
+
+        function closeDeleteModal() {
+            pendingDeleteIndex = null;
+            document.getElementById('favDeleteModal').classList.remove('active');
+        }
+
+        function confirmDeleteFavorite() {
+            if (pendingDeleteIndex === null || !favorites[pendingDeleteIndex]) {
+                closeDeleteModal();
+                return;
+            }
+            favorites.splice(pendingDeleteIndex, 1);
+            saveFavorites();
+            pendingDeleteIndex = null;
+            document.getElementById('favDeleteModal').classList.remove('active');
+            renderFavorites();
+        }
+
+        function createFavorite() {
+            const prompt = document.getElementById('promptInput').value.trim();
+            if (!prompt) {
+                favAlert('无法收藏', '当前提示词为空，无法收藏。');
+                return;
+            }
+            const defaultTitle = makePreview(prompt).replace('…', '');
+            const input = document.getElementById('favTitleInput');
+            input.value = defaultTitle;
+            document.getElementById('favTitleModal').classList.add('active');
+            setTimeout(() => { input.focus(); input.select(); }, 0);
+        }
+
+        function closeTitleModal() {
+            document.getElementById('favTitleModal').classList.remove('active');
+        }
+
+        function confirmCreateFavorite() {
+            const prompt = document.getElementById('promptInput').value.trim();
+            if (!prompt) { closeTitleModal(); return; }
+            const input = document.getElementById('favTitleInput');
+            const defaultTitle = makePreview(prompt).replace('…', '');
+            const finalTitle = input.value.trim() || defaultTitle;
+            favorites.unshift({ id: Date.now(), title: finalTitle, prompt: prompt });
+            saveFavorites();
+            closeTitleModal();
+            renderFavorites();
+        }
+
+        function exportFavorites() {
+            if (favorites.length === 0) {
+                favAlert('无法导出', '收藏夹为空，没有可导出的内容。');
+                return;
+            }
+            const data = JSON.stringify(favorites, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'gpt-image-favorites-' + Date.now() + '.json';
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importFavorites() {
+            document.getElementById('favFileInput').click();
+        }
+
+        function handleFavImport(event) {
+            const file = event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                let imported;
+                try {
+                    imported = JSON.parse(e.target.result);
+                } catch (err) {
+                    favAlert('导入失败', '文件解析失败，请确认是有效的 JSON 文件。');
+                    return;
+                }
+                if (!Array.isArray(imported)) {
+                    favAlert('导入失败', '文件格式不正确：应为收藏数组。');
+                    return;
+                }
+                const valid = imported.filter(isValidFav).map(f => ({
+                    id: typeof f.id === 'number' ? f.id : Date.now() + Math.floor(Math.random() * 1000),
+                    title: f.title,
+                    prompt: f.prompt
+                }));
+                if (valid.length === 0) {
+                    favAlert('导入失败', '文件中没有有效的收藏。');
+                    return;
+                }
+                if (favorites.length === 0) {
+                    favorites = valid;
+                    saveFavorites();
+                    renderFavorites();
+                } else {
+                    pendingImport = valid;
+                    document.getElementById('favImportMsg').innerHTML =
+                        '已读取 <strong>' + valid.length + '</strong> 条收藏。<br>选择「追加」加入现有收藏，或「覆盖」替换当前收藏夹。';
+                    document.getElementById('favImportModal').classList.add('active');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function closeImportModal() {
+            pendingImport = null;
+            document.getElementById('favImportModal').classList.remove('active');
+        }
+
+        function resolveImport(append) {
+            if (!pendingImport) { closeImportModal(); return; }
+            favorites = append ? favorites.concat(pendingImport) : pendingImport;
+            saveFavorites();
+            pendingImport = null;
+            document.getElementById('favImportModal').classList.remove('active');
+            renderFavorites();
+        }
+
+        function updateFavFade() {
+            const wrap = document.getElementById('favListWrap');
+            const list = document.getElementById('favList');
+            const scrollable = list.scrollHeight - list.clientHeight;
+            wrap.classList.toggle('fade-top', list.scrollTop > 4);
+            wrap.classList.toggle('fade-bottom', scrollable > 4 && list.scrollTop < scrollable - 4);
+        }
+
+        document.getElementById('favList').addEventListener('scroll', updateFavFade);
+
+        document.getElementById('favTitleInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); confirmCreateFavorite(); }
+        });
+
         applyTheme();
         loadSettings();
+        loadFavorites();
         setupImageViewerEvents();
+        setupFavDragContainer();
         updateResolutions();
     </script>
 </body>
