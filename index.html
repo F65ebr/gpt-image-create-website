@@ -291,6 +291,29 @@
             font-weight: 500;
         }
 
+        .prompt-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .btn-clear-prompt {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+            line-height: 1;
+            padding: 3px 0;
+            transition: color 0.15s ease;
+        }
+
+        .btn-clear-prompt:hover {
+            color: var(--text-tertiary);
+        }
+
         .prompt-area textarea {
             flex: 1;
             min-height: 150px;
@@ -1101,14 +1124,17 @@
         <button class="btn btn-favorites" onclick="openFavorites()">收藏</button>
 
         <div class="prompt-area">
-            <label>提示词</label>
+            <div class="prompt-header">
+                <label for="promptInput">提示词</label>
+                <button type="button" class="btn-clear-prompt" onclick="clearPrompt()">清除提示词</button>
+            </div>
             <textarea id="promptInput" placeholder="描述你想生成的图像..."></textarea>
         </div>
 
         <div class="btn-row">
             <button class="btn btn-send" id="sendBtn" onclick="generate()">生成图像</button>
             <button class="btn btn-download" id="downloadBtn" disabled onclick="downloadImage()">下载</button>
-            <button class="btn btn-clear" id="clearBtn" disabled onclick="clearImage()">清除</button>
+            <button class="btn btn-clear" id="clearBtn" disabled onclick="confirmClearImage()">清除</button>
         </div>
     </div>
 
@@ -1226,6 +1252,17 @@
         </div>
     </div>
 
+    <div class="modal-overlay fav-prompt-modal" id="clearConfirmModal" onclick="if(event.target===this)closeClearConfirm()">
+        <div class="modal">
+            <h2 id="clearConfirmTitle">确认清除</h2>
+            <div class="fav-prompt-msg" id="clearConfirmMsg"></div>
+            <div class="btn-row">
+                <button class="btn btn-cancel" onclick="closeClearConfirm()">取消</button>
+                <button class="btn btn-primary" onclick="confirmClearAction()">清除</button>
+            </div>
+        </div>
+    </div>
+
     <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="handleFileUpload(event)" />
 
     <script>
@@ -1233,6 +1270,7 @@
         let referenceImageFile = null;
         let generatedImageBase64 = null;
         let isGenerating = false;
+        let pendingClearAction = null;
 
         function getStoredTheme() {
             try {
@@ -1671,6 +1709,37 @@
             }
             const byteArray = new Uint8Array(byteNumbers);
             return new File([byteArray], filename, { type: 'image/png' });
+        }
+
+        function clearPrompt() {
+            const promptInput = document.getElementById('promptInput');
+            if (!promptInput.value) return;
+            openClearConfirm('清除提示词', '确定要清除当前提示词吗？此操作无法撤销。', () => {
+                promptInput.value = '';
+                promptInput.focus();
+            });
+        }
+
+        function confirmClearImage() {
+            openClearConfirm('清除图片', '确定要清除当前图片和参考图吗？此操作无法撤销。', clearImage);
+        }
+
+        function openClearConfirm(title, msg, action) {
+            pendingClearAction = action;
+            document.getElementById('clearConfirmTitle').textContent = title;
+            document.getElementById('clearConfirmMsg').textContent = msg;
+            document.getElementById('clearConfirmModal').classList.add('active');
+        }
+
+        function closeClearConfirm() {
+            pendingClearAction = null;
+            document.getElementById('clearConfirmModal').classList.remove('active');
+        }
+
+        function confirmClearAction() {
+            const action = pendingClearAction;
+            closeClearConfirm();
+            if (typeof action === 'function') action();
         }
 
         function clearImage() {
