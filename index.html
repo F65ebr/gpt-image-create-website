@@ -522,26 +522,65 @@
             gap: 16px;
             z-index: 10;
             border-radius: 16px;
+            padding: 24px;
+            cursor: wait;
+            transition: background 0.25s ease;
         }
 
         .loading-overlay.active {
             display: flex;
         }
 
-        .spinner {
-            width: 36px;
-            height: 36px;
-            border: 3px solid var(--spinner-track);
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+        .generation-animation {
+            position: relative;
+            width: 72px;
+            height: 72px;
         }
 
-        @keyframes spin {
+        .generation-animation::before,
+        .generation-animation::after,
+        .generation-ring {
+            position: absolute;
+            inset: 0;
+            border: 2px solid var(--accent);
+            border-right-color: transparent;
+            border-radius: 50%;
+            content: '';
+        }
+
+        .generation-animation::before {
+            animation: generationSpin 1.4s linear infinite;
+        }
+
+        .generation-animation::after {
+            inset: 9px;
+            opacity: 0.35;
+            border-color: var(--border-strong);
+            border-left-color: transparent;
+            animation: generationSpinReverse 2s linear infinite;
+        }
+
+        .generation-ring {
+            inset: 20px;
+            border-width: 3px;
+            border-color: var(--accent-strong);
+            opacity: 0.75;
+            animation: generationPulse 1.2s ease-in-out infinite;
+        }
+
+        @keyframes generationSpin {
             to { transform: rotate(360deg); }
         }
 
-        .loading-overlay p {
+        @keyframes generationSpinReverse {
+            to { transform: rotate(-360deg); }
+        }
+
+        @keyframes generationPulse {
+            50% { transform: scale(0.7); opacity: 0.25; }
+        }
+
+        .generation-label {
             color: var(--text-tertiary);
             font-size: 14px;
         }
@@ -660,7 +699,8 @@
             font-size: 12px;
             padding: 10px 12px;
             border-radius: 8px;
-            width: 210px;
+            width: min(210px, calc(100vw - 32px));
+            max-width: calc(100vw - 32px);
             line-height: 1.5;
             z-index: 100;
             transition: opacity 0.15s;
@@ -695,6 +735,41 @@
             outline: none;
             border-color: var(--accent);
             box-shadow: 0 0 0 2px var(--accent-shadow);
+        }
+
+        .compression-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 31px;
+        }
+
+        .compression-control input[type="range"] {
+            flex: 1;
+            min-width: 0;
+            padding: 0;
+            border: none;
+            box-shadow: none;
+            accent-color: var(--accent);
+        }
+
+        .compression-control output {
+            width: 34px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .compression-control.is-disabled {
+            opacity: 0.45;
+        }
+
+        /* Edge-aligned option rows should open help text inward on narrow screens. */
+        .compression-group label .tooltip,
+        .moderation-group label .tooltip {
+            left: 0 !important;
+            right: auto !important;
         }
 
         .param-row {
@@ -1074,7 +1149,7 @@
                     </select>
                 </div>
                 <div class="param-group">
-                    <label>图像分辨率<span class="tooltip">输出图片的像素尺寸。分辨率越高细节越丰富，但生成更慢、费用更高。</span></label>
+                    <label>图像分辨率<span class="tooltip">超过 2560×1440（约 368 万像素）的输出属于官方实验性高分辨率，可能更慢或有不同的可用性。</span></label>
                     <select id="sizeSelect">
                         <option value="auto">自动</option>
                     </select>
@@ -1091,8 +1166,8 @@
                     </select>
                 </div>
                 <div class="param-group">
-                    <label>输出格式<span class="tooltip">图片文件格式。PNG 无损且支持透明背景；JPEG 体积小适合照片；WebP 兼顾质量和体积。</span></label>
-                    <select id="outputFormat">
+                    <label>输出格式<span class="tooltip">图片文件格式。PNG 无损；JPEG 体积小、生成更快；WebP 兼顾质量和体积。</span></label>
+                    <select id="outputFormat" onchange="updateCompressionControl()">
                         <option value="png">PNG</option>
                         <option value="jpeg">JPEG</option>
                         <option value="webp">WebP</option>
@@ -1100,20 +1175,21 @@
                 </div>
             </div>
             <div class="param-row">
-                <div class="param-group">
-                    <label>背景<span class="tooltip">控制图片背景。透明模式会移除背景（仅 PNG/WebP 支持），适合生成 Logo 或贴纸素材。</span></label>
-                    <select id="backgroundSelect">
-                        <option value="auto">自动</option>
-                        <option value="transparent">透明</option>
-                        <option value="opaque">不透明</option>
-                    </select>
-                </div>
-                <div class="param-group">
+                <div class="param-group moderation-group">
                     <label>内容审核<span class="tooltip">OpenAI 的内容安全过滤强度。"自动"为默认审核级别，"宽松"会放宽限制，允许更多创意内容通过。</span></label>
                     <select id="moderationSelect">
                         <option value="auto">自动</option>
                         <option value="low" selected>宽松</option>
                     </select>
+                </div>
+            </div>
+            <div class="param-row">
+                <div class="param-group compression-group">
+                    <label>压缩级别<span class="tooltip">仅 JPEG 和 WebP 支持，范围为 0–100。PNG 请求不会发送此参数。</span></label>
+                    <div class="compression-control is-disabled" id="compressionControl">
+                        <input type="range" id="outputCompression" min="0" max="100" value="100" disabled oninput="compressionValue.value=this.value" />
+                        <output id="compressionValue">100</output>
+                    </div>
                 </div>
             </div>
             </div>
@@ -1151,8 +1227,10 @@
                     参考图 <span class="remove" onclick="removeReference(event)">&#10005;</span>
                 </span>
                 <div class="loading-overlay" id="loading">
-                    <div class="spinner"></div>
-                    <p>正在生成图像...</p>
+                    <div class="generation-animation" aria-hidden="true">
+                        <span class="generation-ring"></span>
+                    </div>
+                    <div class="generation-label" role="status" aria-live="polite">正在生成图像...</div>
                 </div>
             </div>
         </div>
@@ -1269,6 +1347,7 @@
         let referenceImageBase64 = null;
         let referenceImageFile = null;
         let generatedImageBase64 = null;
+        let generatedImageFormat = 'png';
         let isGenerating = false;
         let pendingClearAction = null;
 
@@ -1329,28 +1408,23 @@
         const resolutionMap = {
             '1:1': [
                 { value: '1024x1024', label: '1024×1024' },
-                { value: '2048x2048', label: '2048×2048 (2K)' },
-                { value: '4096x4096', label: '4096×4096 (4K)' }
+                { value: '2048x2048', label: '2048×2048 (2K · 实验性)' }
             ],
             '3:2': [
                 { value: '1536x1024', label: '1536×1024' },
-                { value: '3072x2048', label: '3072×2048 (2K)' },
-                { value: '4096x2736', label: '4096×2736 (4K)' }
+                { value: '3072x2048', label: '3072×2048 (实验性)' }
             ],
             '2:3': [
                 { value: '1024x1536', label: '1024×1536' },
-                { value: '2048x3072', label: '2048×3072 (2K)' },
-                { value: '2736x4096', label: '2736×4096 (4K)' }
+                { value: '2048x3072', label: '2048×3072 (实验性)' }
             ],
             '16:9': [
-                { value: '1792x1024', label: '1792×1024' },
-                { value: '3584x2048', label: '3584×2048 (2K)' },
-                { value: '4096x2304', label: '4096×2304 (4K)' }
+                { value: '2048x1152', label: '2048×1152' },
+                { value: '3840x2160', label: '3840×2160 (4K · 实验性)' }
             ],
             '9:16': [
-                { value: '1024x1792', label: '1024×1792' },
-                { value: '2048x3584', label: '2048×3584 (2K)' },
-                { value: '2304x4096', label: '2304×4096 (4K)' }
+                { value: '1152x2048', label: '1152×2048' },
+                { value: '2160x3840', label: '2160×3840 (4K · 实验性)' }
             ],
             'auto': [
                 { value: 'auto', label: '自动' }
@@ -1371,14 +1445,23 @@
         }
 
         function getAdvancedParams() {
+            const outputFormat = document.getElementById('outputFormat').value;
             return {
                 size: document.getElementById('sizeSelect').value,
                 quality: document.getElementById('qualitySelect').value,
-                output_format: document.getElementById('outputFormat').value,
-                background: document.getElementById('backgroundSelect').value,
-                output_compression: 100,
+                output_format: outputFormat,
+                output_compression: outputFormat === 'png'
+                    ? null
+                    : Number(document.getElementById('outputCompression').value),
                 moderation: document.getElementById('moderationSelect').value
             };
+        }
+
+        function updateCompressionControl() {
+            const enabled = document.getElementById('outputFormat').value !== 'png';
+            const control = document.getElementById('compressionControl');
+            document.getElementById('outputCompression').disabled = !enabled;
+            control.classList.toggle('is-disabled', !enabled);
         }
 
         function loadSettings() {
@@ -1540,8 +1623,12 @@
                 document.getElementById('placeholder').style.display = 'block';
             } else {
                 const img = document.getElementById('resultImage');
-                img.src = 'data:image/png;base64,' + generatedImageBase64;
+                img.src = 'data:' + getImageMime(generatedImageFormat) + ';base64,' + generatedImageBase64;
             }
+        }
+
+        function getImageMime(format) {
+            return format === 'jpeg' ? 'image/jpeg' : format === 'webp' ? 'image/webp' : 'image/png';
         }
 
         async function generate() {
@@ -1563,6 +1650,12 @@
             const params = getAdvancedParams();
             const sendBtn = document.getElementById('sendBtn');
             const loading = document.getElementById('loading');
+            const img = document.getElementById('resultImage');
+            const previousImageState = {
+                src: img.src,
+                display: img.style.display,
+                placeholderDisplay: document.getElementById('placeholder').style.display
+            };
 
             isGenerating = true;
             sendBtn.disabled = true;
@@ -1580,13 +1673,12 @@
                 }
 
                 const elapsedMs = Date.now() - startTime;
-                const result = response.data[0].b64_json;
+                const result = response && response.data && response.data[0] && response.data[0].b64_json;
+                if (!result) throw new Error('接口未返回图像数据');
 
                 generatedImageBase64 = result;
-                const fmt = params.output_format;
-                const mime = fmt === 'jpeg' ? 'image/jpeg' : fmt === 'webp' ? 'image/webp' : 'image/png';
-                const img = document.getElementById('resultImage');
-                img.src = 'data:' + mime + ';base64,' + result;
+                generatedImageFormat = params.output_format;
+                img.src = 'data:' + getImageMime(generatedImageFormat) + ';base64,' + result;
                 img.style.display = 'block';
                 document.getElementById('placeholder').style.display = 'none';
                 document.getElementById('downloadBtn').disabled = false;
@@ -1599,6 +1691,9 @@
                 showInfoModal(elapsedMs);
 
             } catch (err) {
+                img.src = previousImageState.src;
+                img.style.display = previousImageState.display;
+                document.getElementById('placeholder').style.display = previousImageState.placeholderDisplay;
                 alert('生成失败: ' + err.message);
             } finally {
                 isGenerating = false;
@@ -1627,21 +1722,32 @@
             document.getElementById('infoModal').classList.remove('active');
         }
 
+        function appendOptionalImageParams(target, params) {
+            if (params.output_compression !== null) {
+                target.output_compression = params.output_compression;
+            }
+            return target;
+        }
+
+        async function fetchImageRequest(url, token, init) {
+            const resp = await fetch(url, init);
+            if (!resp.ok) throw new Error(await resp.text());
+            return await resp.json();
+        }
+
         async function callImageGeneration(baseUrl, token, prompt, params) {
             const url = baseUrl.replace(/\/$/, '') + '/images/generations';
-            const body = {
+            const body = appendOptionalImageParams({
                 model: 'gpt-image-2',
                 prompt: prompt,
                 n: 1,
                 size: params.size,
                 quality: params.quality,
                 output_format: params.output_format,
-                background: params.background,
-                output_compression: params.output_compression,
                 moderation: params.moderation
-            };
+            }, params);
 
-            const resp = await fetch(url, {
+            return await fetchImageRequest(url, token, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1649,13 +1755,6 @@
                 },
                 body: JSON.stringify(body)
             });
-
-            if (!resp.ok) {
-                const err = await resp.text();
-                throw new Error(err);
-            }
-
-            return await resp.json();
         }
 
         async function callImageEdit(baseUrl, token, prompt, params) {
@@ -1668,9 +1767,10 @@
             formData.append('size', params.size);
             formData.append('quality', params.quality);
             formData.append('output_format', params.output_format);
-            formData.append('background', params.background);
-            formData.append('output_compression', String(params.output_compression));
             formData.append('moderation', params.moderation);
+            if (params.output_compression !== null) {
+                formData.append('output_compression', String(params.output_compression));
+            }
 
             let imageToSend;
             if (referenceImageFile) {
@@ -1693,11 +1793,7 @@
                 body: formData
             });
 
-            if (!resp.ok) {
-                const err = await resp.text();
-                throw new Error(err);
-            }
-
+            if (!resp.ok) throw new Error(await resp.text());
             return await resp.json();
         }
 
@@ -1746,6 +1842,7 @@
             referenceImageBase64 = null;
             referenceImageFile = null;
             generatedImageBase64 = null;
+            generatedImageFormat = 'png';
             const img = document.getElementById('resultImage');
             img.src = '';
             img.style.display = 'none';
@@ -1755,15 +1852,45 @@
             document.getElementById('clearBtn').disabled = true;
         }
 
-        function downloadImage() {
+        function base64ToBlob(base64, mime) {
+            const byteChars = atob(base64);
+            const byteArray = new Uint8Array(byteChars.length);
+            for (let i = 0; i < byteChars.length; i++) byteArray[i] = byteChars.charCodeAt(i);
+            return new Blob([byteArray], { type: mime });
+        }
+
+        async function downloadImage() {
             if (!generatedImageBase64) return;
-            const fmt = document.getElementById('outputFormat').value;
-            const mime = fmt === 'jpeg' ? 'image/jpeg' : fmt === 'webp' ? 'image/webp' : 'image/png';
+            const fmt = generatedImageFormat || document.getElementById('outputFormat').value;
+            const mime = getImageMime(fmt);
             const ext = fmt === 'jpeg' ? 'jpg' : fmt;
+            const filename = 'gpt-image-2-' + Date.now() + '.' + ext;
+            const blob = base64ToBlob(generatedImageBase64, mime);
+
+            // iOS Safari/Chrome do not reliably honor `download` on data URLs.
+            // The native share sheet provides the system Save Image action.
+            if (navigator.share && navigator.canShare) {
+                try {
+                    const file = new File([blob], filename, { type: mime });
+                    if (navigator.canShare({ files: [file] })) {
+                        await navigator.share({ files: [file], title: filename });
+                        return;
+                    }
+                } catch (err) {
+                    if (err && err.name === 'AbortError') return;
+                }
+            }
+
+            const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.href = 'data:' + mime + ';base64,' + generatedImageBase64;
-            link.download = 'gpt-image-2-' + Date.now() + '.' + ext;
+            link.href = url;
+            link.download = filename;
+            link.rel = 'noopener';
+            document.body.appendChild(link);
             link.click();
+            link.remove();
+            // Keep the object URL alive long enough for iOS and desktop download managers.
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
         }
 
         /* ---------- 收藏夹 ---------- */
@@ -2267,6 +2394,7 @@
         loadFavorites();
         setupImageViewerEvents();
         updateResolutions();
+        updateCompressionControl();
     </script>
 </body>
 </html>
