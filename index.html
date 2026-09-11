@@ -1160,6 +1160,8 @@
                     <label>质量<span class="tooltip">影响图片的细节丰富程度和生成耗时。高质量细节更多但更慢更贵，低质量生成快但细节较少。</span></label>
                     <select id="qualitySelect">
                         <option value="auto">自动</option>
+                        <option value="max">最高</option>
+                        <option value="xhigh">极高</option>
                         <option value="high">高</option>
                         <option value="medium">中</option>
                         <option value="low">低</option>
@@ -1180,6 +1182,14 @@
                     <select id="moderationSelect">
                         <option value="auto">自动</option>
                         <option value="low" selected>宽松</option>
+                    </select>
+                </div>
+                <div class="param-group">
+                    <label>背景<span class="tooltip">"透明"需要 PNG 或 WebP 格式，选中后会自动切换格式；"不透明"强制填充背景色。</span></label>
+                    <select id="backgroundSelect" onchange="updateBackgroundControl()">
+                        <option value="auto" selected>自动</option>
+                        <option value="transparent">透明</option>
+                        <option value="opaque">不透明</option>
                     </select>
                 </div>
             </div>
@@ -1444,6 +1454,8 @@
             });
         }
 
+        const IMAGE_MODEL = 'gpt-image-2.5';
+
         function getAdvancedParams() {
             const outputFormat = document.getElementById('outputFormat').value;
             return {
@@ -1453,15 +1465,31 @@
                 output_compression: outputFormat === 'png'
                     ? null
                     : Number(document.getElementById('outputCompression').value),
-                moderation: document.getElementById('moderationSelect').value
+                moderation: document.getElementById('moderationSelect').value,
+                background: document.getElementById('backgroundSelect').value
             };
         }
 
         function updateCompressionControl() {
+            syncTransparentFormat();
             const enabled = document.getElementById('outputFormat').value !== 'png';
             const control = document.getElementById('compressionControl');
             document.getElementById('outputCompression').disabled = !enabled;
             control.classList.toggle('is-disabled', !enabled);
+        }
+
+        // Transparency is only produced with an alpha-capable container (PNG/WebP).
+        function syncTransparentFormat() {
+            const transparent = document.getElementById('backgroundSelect').value === 'transparent';
+            const formatSelect = document.getElementById('outputFormat');
+            formatSelect.querySelector('option[value="jpeg"]').disabled = transparent;
+            if (transparent && formatSelect.value === 'jpeg') {
+                formatSelect.value = 'png';
+            }
+        }
+
+        function updateBackgroundControl() {
+            updateCompressionControl();
         }
 
         function loadSettings() {
@@ -1726,6 +1754,9 @@
             if (params.output_compression !== null) {
                 target.output_compression = params.output_compression;
             }
+            if (params.background && params.background !== 'auto') {
+                target.background = params.background;
+            }
             return target;
         }
 
@@ -1738,7 +1769,7 @@
         async function callImageGeneration(baseUrl, token, prompt, params) {
             const url = baseUrl.replace(/\/$/, '') + '/images/generations';
             const body = appendOptionalImageParams({
-                model: 'gpt-image-2',
+                model: IMAGE_MODEL,
                 prompt: prompt,
                 n: 1,
                 size: params.size,
@@ -1761,7 +1792,7 @@
             const url = baseUrl.replace(/\/$/, '') + '/images/edits';
 
             const formData = new FormData();
-            formData.append('model', 'gpt-image-2');
+            formData.append('model', IMAGE_MODEL);
             formData.append('prompt', prompt);
             formData.append('n', '1');
             formData.append('size', params.size);
@@ -1770,6 +1801,9 @@
             formData.append('moderation', params.moderation);
             if (params.output_compression !== null) {
                 formData.append('output_compression', String(params.output_compression));
+            }
+            if (params.background && params.background !== 'auto') {
+                formData.append('background', params.background);
             }
 
             let imageToSend;
@@ -1864,7 +1898,7 @@
             const fmt = generatedImageFormat || document.getElementById('outputFormat').value;
             const mime = getImageMime(fmt);
             const ext = fmt === 'jpeg' ? 'jpg' : fmt;
-            const filename = 'gpt-image-2-' + Date.now() + '.' + ext;
+            const filename = 'gpt-image-2.5-' + Date.now() + '.' + ext;
             const blob = base64ToBlob(generatedImageBase64, mime);
 
             // iOS Safari/Chrome do not reliably honor `download` on data URLs.
