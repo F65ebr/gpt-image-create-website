@@ -514,51 +514,307 @@
 
         .generation-animation {
             position: relative;
-            width: 72px;
-            height: 72px;
+            width: 120px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .generation-animation::before,
-        .generation-animation::after,
-        .generation-ring {
+        /* 动画1: 粒子爆炸效果 */
+        .anim-particles .particle {
             position: absolute;
-            inset: 0;
-            border: 2px solid var(--accent);
-            border-right-color: transparent;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            content: '';
+            background: var(--accent);
         }
 
-        .generation-animation::before {
-            animation: generationSpin 1.4s linear infinite;
+        .anim-particles .particle:nth-child(1) { animation: particleExplode1 1.5s ease-out infinite; }
+        .anim-particles .particle:nth-child(2) { animation: particleExplode2 1.5s ease-out infinite; }
+        .anim-particles .particle:nth-child(3) { animation: particleExplode3 1.5s ease-out infinite; }
+        .anim-particles .particle:nth-child(4) { animation: particleExplode4 1.5s ease-out infinite; }
+        .anim-particles .particle:nth-child(5) { animation: particleExplode5 1.5s ease-out infinite; }
+        .anim-particles .particle:nth-child(6) { animation: particleExplode6 1.5s ease-out infinite; }
+        .anim-particles .particle:nth-child(7) { animation: particleExplode7 1.5s ease-out infinite; }
+        .anim-particles .particle:nth-child(8) { animation: particleExplode8 1.5s ease-out infinite; }
+
+        @keyframes particleExplode1 {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(0, -50px) scale(0.2); opacity: 0; }
+        }
+        @keyframes particleExplode2 {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(35px, -35px) scale(0.2); opacity: 0; }
+        }
+        @keyframes particleExplode3 {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(50px, 0) scale(0.2); opacity: 0; }
+        }
+        @keyframes particleExplode4 {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(35px, 35px) scale(0.2); opacity: 0; }
+        }
+        @keyframes particleExplode5 {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(0, 50px) scale(0.2); opacity: 0; }
+        }
+        @keyframes particleExplode6 {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(-35px, 35px) scale(0.2); opacity: 0; }
+        }
+        @keyframes particleExplode7 {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(-50px, 0) scale(0.2); opacity: 0; }
+        }
+        @keyframes particleExplode8 {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(-35px, -35px) scale(0.2); opacity: 0; }
         }
 
-        .generation-animation::after {
-            inset: 9px;
-            opacity: 0.35;
-            border-color: var(--border-strong);
-            border-left-color: transparent;
-            animation: generationSpinReverse 2s linear infinite;
+        /* 动画2: 霓虹脉冲效果 */
+        .anim-neon {
+            position: relative;
         }
 
-        .generation-ring {
-            inset: 20px;
-            border-width: 3px;
-            border-color: var(--accent-strong);
-            opacity: 0.75;
-            animation: generationPulse 1.2s ease-in-out infinite;
+        .anim-neon .neon-ring {
+            position: absolute;
+            border: 3px solid var(--accent);
+            border-radius: 50%;
+            animation: neonPulse 1.5s ease-in-out infinite;
         }
 
-        @keyframes generationSpin {
-            to { transform: rotate(360deg); }
+        .anim-neon .neon-ring:nth-child(1) {
+            width: 40px;
+            height: 40px;
+            animation-delay: 0s;
         }
 
-        @keyframes generationSpinReverse {
-            to { transform: rotate(-360deg); }
+        .anim-neon .neon-ring:nth-child(2) {
+            width: 60px;
+            height: 60px;
+            animation-delay: 0.3s;
         }
 
-        @keyframes generationPulse {
-            50% { transform: scale(0.7); opacity: 0.25; }
+        .anim-neon .neon-ring:nth-child(3) {
+            width: 80px;
+            height: 80px;
+            animation-delay: 0.6s;
+        }
+
+        @keyframes neonPulse {
+            0% {
+                transform: scale(0.5);
+                opacity: 1;
+                box-shadow: 0 0 0 0 var(--accent);
+            }
+            50% {
+                opacity: 0.8;
+                box-shadow: 0 0 20px 5px var(--accent-shadow);
+            }
+            100% {
+                transform: scale(1.5);
+                opacity: 0;
+                box-shadow: 0 0 40px 10px var(--accent-shadow);
+            }
+        }
+
+        /* 动画3: DNA双螺旋效果 */
+        .anim-dna {
+            position: relative;
+            width: 100px;
+            height: 100px;
+        }
+
+        .anim-dna .dna-strand {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+
+        .anim-dna .dna-strand:nth-child(1) { animation: dnaStrand1 2s linear infinite; }
+        .anim-dna .dna-strand:nth-child(2) { animation: dnaStrand2 2s linear infinite; }
+        .anim-dna .dna-strand:nth-child(3) { animation: dnaStrand3 2s linear infinite; }
+        .anim-dna .dna-strand:nth-child(4) { animation: dnaStrand4 2s linear infinite; }
+        .anim-dna .dna-strand:nth-child(5) { animation: dnaStrand5 2s linear infinite; }
+        .anim-dna .dna-strand:nth-child(6) { animation: dnaStrand6 2s linear infinite; }
+
+        @keyframes dnaStrand1 {
+            0%, 100% { transform: translate(0, -40px) scale(1); opacity: 1; }
+            25% { transform: translate(30px, -20px) scale(0.7); opacity: 0.7; }
+            50% { transform: translate(0, 0) scale(1); opacity: 1; }
+            75% { transform: translate(-30px, 20px) scale(0.7); opacity: 0.7; }
+        }
+        @keyframes dnaStrand2 {
+            0%, 100% { transform: translate(0, -40px) scale(0.7); opacity: 0.7; }
+            25% { transform: translate(-30px, -20px) scale(1); opacity: 1; }
+            50% { transform: translate(0, 0) scale(0.7); opacity: 0.7; }
+            75% { transform: translate(30px, 20px) scale(1); opacity: 1; }
+        }
+        @keyframes dnaStrand3 {
+            0%, 100% { transform: translate(0, -13px) scale(1); opacity: 1; }
+            25% { transform: translate(30px, 7px) scale(0.7); opacity: 0.7; }
+            50% { transform: translate(0, 27px) scale(1); opacity: 1; }
+            75% { transform: translate(-30px, 47px) scale(0.7); opacity: 0.7; }
+        }
+        @keyframes dnaStrand4 {
+            0%, 100% { transform: translate(0, -13px) scale(0.7); opacity: 0.7; }
+            25% { transform: translate(-30px, 7px) scale(1); opacity: 1; }
+            50% { transform: translate(0, 27px) scale(0.7); opacity: 0.7; }
+            75% { transform: translate(30px, 47px) scale(1); opacity: 1; }
+        }
+        @keyframes dnaStrand5 {
+            0%, 100% { transform: translate(0, 13px) scale(1); opacity: 1; }
+            25% { transform: translate(30px, 33px) scale(0.7); opacity: 0.7; }
+            50% { transform: translate(0, 53px) scale(1); opacity: 1; }
+            75% { transform: translate(-30px, -27px) scale(0.7); opacity: 0.7; }
+        }
+        @keyframes dnaStrand6 {
+            0%, 100% { transform: translate(0, 13px) scale(0.7); opacity: 0.7; }
+            25% { transform: translate(-30px, 33px) scale(1); opacity: 1; }
+            50% { transform: translate(0, 53px) scale(0.7); opacity: 0.7; }
+            75% { transform: translate(30px, -27px) scale(1); opacity: 1; }
+        }
+
+        /* 动画4: 几何变形效果 */
+        .anim-geometry .geo-shape {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border: 3px solid var(--accent);
+            animation: geometryMorph 3s ease-in-out infinite;
+        }
+
+        .anim-geometry .geo-shape:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .anim-geometry .geo-shape:nth-child(2) {
+            animation-delay: 0.5s;
+            opacity: 0.7;
+        }
+
+        .anim-geometry .geo-shape:nth-child(3) {
+            animation-delay: 1s;
+            opacity: 0.4;
+        }
+
+        @keyframes geometryMorph {
+            0% {
+                border-radius: 0%;
+                transform: rotate(0deg) scale(1);
+            }
+            33% {
+                border-radius: 50%;
+                transform: rotate(120deg) scale(1.2);
+            }
+            66% {
+                border-radius: 20%;
+                transform: rotate(240deg) scale(0.8);
+            }
+            100% {
+                border-radius: 0%;
+                transform: rotate(360deg) scale(1);
+            }
+        }
+
+        /* 动画5: 量子波动效果 */
+        .anim-quantum {
+            position: relative;
+        }
+
+        .anim-quantum .quantum-dot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: var(--accent);
+            border-radius: 50%;
+            filter: blur(2px);
+        }
+
+        .anim-quantum .quantum-dot:nth-child(1) { animation: quantumWave1 2s ease-in-out infinite; }
+        .anim-quantum .quantum-dot:nth-child(2) { animation: quantumWave2 2s ease-in-out infinite; }
+        .anim-quantum .quantum-dot:nth-child(3) { animation: quantumWave3 2s ease-in-out infinite; }
+        .anim-quantum .quantum-dot:nth-child(4) { animation: quantumWave4 2s ease-in-out infinite; }
+        .anim-quantum .quantum-dot:nth-child(5) { animation: quantumWave5 2s ease-in-out infinite; }
+
+        @keyframes quantumWave1 {
+            0%, 100% { transform: translate(-40px, 0) scale(1); opacity: 1; }
+            50% { transform: translate(-40px, -30px) scale(1.5); opacity: 0.5; }
+        }
+        @keyframes quantumWave2 {
+            0%, 100% { transform: translate(-20px, 0) scale(1); opacity: 1; }
+            50% { transform: translate(-20px, 30px) scale(1.5); opacity: 0.5; }
+        }
+        @keyframes quantumWave3 {
+            0%, 100% { transform: translate(0, 0) scale(1.5); opacity: 0.5; }
+            50% { transform: translate(0, -40px) scale(1); opacity: 1; }
+        }
+        @keyframes quantumWave4 {
+            0%, 100% { transform: translate(20px, 0) scale(1); opacity: 1; }
+            50% { transform: translate(20px, 30px) scale(1.5); opacity: 0.5; }
+        }
+        @keyframes quantumWave5 {
+            0%, 100% { transform: translate(40px, 0) scale(1); opacity: 1; }
+            50% { transform: translate(40px, -30px) scale(1.5); opacity: 0.5; }
+        }
+
+        /* 动画6: 星空漩涡效果 */
+        .anim-vortex {
+            position: relative;
+        }
+
+        .anim-vortex .vortex-star {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        .anim-vortex .vortex-star:nth-child(1) { animation: vortexSpin1 3s linear infinite; }
+        .anim-vortex .vortex-star:nth-child(2) { animation: vortexSpin2 3s linear infinite; }
+        .anim-vortex .vortex-star:nth-child(3) { animation: vortexSpin3 3s linear infinite; }
+        .anim-vortex .vortex-star:nth-child(4) { animation: vortexSpin4 3s linear infinite; }
+        .anim-vortex .vortex-star:nth-child(5) { animation: vortexSpin5 3s linear infinite; }
+        .anim-vortex .vortex-star:nth-child(6) { animation: vortexSpin6 3s linear infinite; }
+        .anim-vortex .vortex-star:nth-child(7) { animation: vortexSpin7 3s linear infinite; }
+        .anim-vortex .vortex-star:nth-child(8) { animation: vortexSpin8 3s linear infinite; }
+
+        @keyframes vortexSpin1 {
+            0% { transform: rotate(0deg) translateX(50px) scale(1); opacity: 1; }
+            100% { transform: rotate(360deg) translateX(50px) scale(0.3); opacity: 0.3; }
+        }
+        @keyframes vortexSpin2 {
+            0% { transform: rotate(45deg) translateX(50px) scale(1); opacity: 1; }
+            100% { transform: rotate(405deg) translateX(50px) scale(0.3); opacity: 0.3; }
+        }
+        @keyframes vortexSpin3 {
+            0% { transform: rotate(90deg) translateX(50px) scale(1); opacity: 1; }
+            100% { transform: rotate(450deg) translateX(50px) scale(0.3); opacity: 0.3; }
+        }
+        @keyframes vortexSpin4 {
+            0% { transform: rotate(135deg) translateX(50px) scale(1); opacity: 1; }
+            100% { transform: rotate(495deg) translateX(50px) scale(0.3); opacity: 0.3; }
+        }
+        @keyframes vortexSpin5 {
+            0% { transform: rotate(180deg) translateX(50px) scale(1); opacity: 1; }
+            100% { transform: rotate(540deg) translateX(50px) scale(0.3); opacity: 0.3; }
+        }
+        @keyframes vortexSpin6 {
+            0% { transform: rotate(225deg) translateX(50px) scale(1); opacity: 1; }
+            100% { transform: rotate(585deg) translateX(50px) scale(0.3); opacity: 0.3; }
+        }
+        @keyframes vortexSpin7 {
+            0% { transform: rotate(270deg) translateX(50px) scale(1); opacity: 1; }
+            100% { transform: rotate(630deg) translateX(50px) scale(0.3); opacity: 0.3; }
+        }
+        @keyframes vortexSpin8 {
+            0% { transform: rotate(315deg) translateX(50px) scale(1); opacity: 1; }
+            100% { transform: rotate(675deg) translateX(50px) scale(0.3); opacity: 0.3; }
         }
 
         .generation-label {

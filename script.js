@@ -307,6 +307,41 @@ function getImageMime(format) {
     return format === 'jpeg' ? 'image/jpeg' : format === 'webp' ? 'image/webp' : 'image/png';
 }
 
+// 加载动画配置
+const loadingAnimations = [
+    {
+        name: 'particles',
+        html: '<div class="particle"></div>'.repeat(8)
+    },
+    {
+        name: 'neon',
+        html: '<div class="neon-ring"></div>'.repeat(3)
+    },
+    {
+        name: 'dna',
+        html: '<div class="dna-strand"></div>'.repeat(6)
+    },
+    {
+        name: 'geometry',
+        html: '<div class="geo-shape"></div>'.repeat(3)
+    },
+    {
+        name: 'quantum',
+        html: '<div class="quantum-dot"></div>'.repeat(5)
+    },
+    {
+        name: 'vortex',
+        html: '<div class="vortex-star"></div>'.repeat(8)
+    }
+];
+
+function setRandomLoadingAnimation() {
+    const animContainer = document.getElementById('generationAnimation');
+    const randomAnim = loadingAnimations[Math.floor(Math.random() * loadingAnimations.length)];
+    animContainer.className = 'generation-animation anim-' + randomAnim.name;
+    animContainer.innerHTML = randomAnim.html;
+}
+
 async function generate() {
     const baseUrl = localStorage.getItem('gpt_image_api_url');
     const token = localStorage.getItem('gpt_image_api_token');
@@ -335,6 +370,7 @@ async function generate() {
 
     isGenerating = true;
     sendBtn.disabled = true;
+    setRandomLoadingAnimation();
     loading.classList.add('active');
     const startTime = Date.now();
 
