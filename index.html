@@ -40,6 +40,16 @@
             <div class="advanced-panel-inner">
             <div class="param-row">
                 <div class="param-group">
+                    <label>模型选择<span class="tooltip">选择用于图像生成的模型。gpt-image-2.5 为默认最新模型，gpt-image-2-4k 支持 4K 分辨率，gpt-image-2 为基础版本。</span></label>
+                    <select id="modelSelect">
+                        <option value="gpt-image-2.5" selected>gpt-image-2.5 (默认)</option>
+                        <option value="gpt-image-2-4k">gpt-image-2-4k</option>
+                        <option value="gpt-image-2">gpt-image-2</option>
+                    </select>
+                </div>
+            </div>
+            <div class="param-row">
+                <div class="param-group">
                     <label>图像比例<span class="tooltip">生成图片的宽高比。1:1 适合头像图标，3:2 横版适合风景横幅，2:3 竖版适合海报壁纸。</span></label>
                     <select id="aspectSelect" onchange="updateResolutions()">
                         <option value="1:1">1:1 (方形)</option>

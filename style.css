@@ -946,11 +946,6 @@
             box-shadow: var(--shadow-tooltip);
         }
 
-        .param-row .param-group:last-child label .tooltip {
-            left: auto;
-            right: 0;
-        }
-
         .param-group label:hover .tooltip {
             visibility: visible;
             opacity: 1;

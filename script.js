@@ -102,11 +102,10 @@ function updateResolutions() {
     });
 }
 
-const IMAGE_MODEL = 'gpt-image-2.5';
-
 function getAdvancedParams() {
     const outputFormat = document.getElementById('outputFormat').value;
     return {
+        model: document.getElementById('modelSelect').value,
         size: document.getElementById('sizeSelect').value,
         quality: document.getElementById('qualitySelect').value,
         output_format: outputFormat,
@@ -453,7 +452,7 @@ async function fetchImageRequest(url, token, init) {
 async function callImageGeneration(baseUrl, token, prompt, params) {
     const url = baseUrl.replace(/\/$/, '') + '/images/generations';
     const body = appendOptionalImageParams({
-        model: IMAGE_MODEL,
+        model: params.model,
         prompt: prompt,
         n: 1,
         size: params.size,
@@ -476,7 +475,7 @@ async function callImageEdit(baseUrl, token, prompt, params) {
     const url = baseUrl.replace(/\/$/, '') + '/images/edits';
 
     const formData = new FormData();
-    formData.append('model', IMAGE_MODEL);
+    formData.append('model', params.model);
     formData.append('prompt', prompt);
     formData.append('n', '1');
     formData.append('size', params.size);
